@@ -28,9 +28,6 @@ class GameScene: SKScene {
     // Количество кораблей, успешно достигших выхода
     var shipsReachedExit = 0
     
-    // Отладочная метка
-    var debugLabel: SKLabelNode?
-    
     // MARK: - Scene Lifecycle
     
     override func didMove(to view: SKView) {
@@ -38,9 +35,6 @@ class GameScene: SKScene {
         
         // Сохраняем размеры экрана
         screenSize = size
-        
-        // Добавляем отладочную метку
-        setupDebugLabel()
         
         // Расчитываем размеры элементов
         calculateSizes()
@@ -51,28 +45,7 @@ class GameScene: SKScene {
         // Запускаем игру
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isGameRunning = true
-            self.updateDebugLabel("Найдите правильную последовательность запуска кораблей")
         }
-    }
-    
-    // MARK: - Debug
-    
-    private func setupDebugLabel() {
-        debugLabel = SKLabelNode(fontNamed: "Arial")
-        debugLabel?.fontSize = 14
-        debugLabel?.fontColor = .white
-        debugLabel?.position = CGPoint(x: size.width/2, y: size.height - 30)
-        debugLabel?.zPosition = 100
-        debugLabel?.text = "Инициализация..."
-        debugLabel?.horizontalAlignmentMode = .center
-        
-        if let debugLabel = debugLabel {
-            addChild(debugLabel)
-        }
-    }
-    
-    private func updateDebugLabel(_ text: String) {
-        debugLabel?.text = text
     }
     
     // MARK: - Setup
@@ -91,20 +64,9 @@ class GameScene: SKScene {
     }
     
     private func setupScene() {
-        // Настройка фона - вода
         setupWaterBackground()
-        
-        // Создание доков (пирсов)
         setupDocks()
-        
-        // Добавляем UI элементы (кнопки, счет)
-        setupUI()
-        
-        // Создание кораблей для текущего уровня
         setupShips()
-        
-        // Добавляем номер уровня
-        setupLevelLabel()
     }
     
     private func setupWaterBackground() {
@@ -176,7 +138,6 @@ class GameScene: SKScene {
     }
     
     private func createDock(at position: CGPoint) {
-        // Создаем визуальное представление пирса как на скриншоте
         let dock = SKShapeNode(rectOf: dockSize, cornerRadius: 10)
         dock.fillColor = .gray
         dock.strokeColor = .lightGray
@@ -188,84 +149,6 @@ class GameScene: SKScene {
         addChild(dock)
     }
     
-    private func setupUI() {
-        // Добавляем панель счета (как на скриншоте)
-        let scorePanel = SKSpriteNode(color: .orange, size: CGSize(width: 140, height: 45))
-        scorePanel.position = CGPoint(x: screenSize.width / 2, y: screenSize.height - 60)
-        scorePanel.zPosition = 50
-        addChild(scorePanel)
-        
-        // Текст "SCORE"
-        let scoreLabel = SKLabelNode(fontNamed: "Arial-Bold")
-        scoreLabel.text = "SCORE"
-        scoreLabel.fontSize = 22
-        scoreLabel.fontColor = .white
-        scoreLabel.position = CGPoint(x: 0, y: 5)
-        scoreLabel.horizontalAlignmentMode = .center
-        scoreLabel.verticalAlignmentMode = .center
-        scorePanel.addChild(scoreLabel)
-        
-        // Поле для счета
-        let scoreField = SKShapeNode(rectOf: CGSize(width: 120, height: 25), cornerRadius: 5)
-        scoreField.fillColor = .white
-        scoreField.strokeColor = .orange
-        scoreField.lineWidth = 2
-        scoreField.position = CGPoint(x: 0, y: -12)
-        scorePanel.addChild(scoreField)
-        
-        // Кнопка назад (как на скриншоте)
-        let backButton = SKShapeNode(rectOf: CGSize(width: 60, height: 50), cornerRadius: 8)
-        backButton.fillColor = .orange
-        backButton.strokeColor = .white
-        backButton.lineWidth = 3
-        backButton.position = CGPoint(x: 50, y: screenSize.height - 50)
-        backButton.zPosition = 50
-        backButton.name = "backButton"
-        addChild(backButton)
-        
-        // Стрелка для кнопки назад
-        let arrowPath = UIBezierPath()
-        arrowPath.move(to: CGPoint(x: -10, y: 0))
-        arrowPath.addLine(to: CGPoint(x: 10, y: 15))
-        arrowPath.addLine(to: CGPoint(x: 10, y: -15))
-        arrowPath.close()
-        
-        let arrow = SKShapeNode(path: arrowPath.cgPath)
-        arrow.fillColor = .white
-        arrow.strokeColor = .white
-        arrow.position = CGPoint(x: -5, y: 0)
-        backButton.addChild(arrow)
-        
-        // Кнопка перезапуска (как на скриншоте)
-        let restartButton = SKShapeNode(circleOfRadius: 25)
-        restartButton.fillColor = .orange
-        restartButton.strokeColor = .white
-        restartButton.lineWidth = 3
-        restartButton.position = CGPoint(x: screenSize.width - 50, y: screenSize.height - 50)
-        restartButton.zPosition = 50
-        restartButton.name = "restartButton"
-        addChild(restartButton)
-        
-        // Значок перезапуска
-        let restartIcon = SKShapeNode()
-        let refreshPath = UIBezierPath()
-        refreshPath.addArc(
-            withCenter: CGPoint.zero,
-            radius: 10,
-            startAngle: .pi / 4,
-            endAngle: 2 * .pi - .pi / 4,
-            clockwise: true
-        )
-        refreshPath.addLine(to: CGPoint(x: 5, y: -15))
-        refreshPath.addLine(to: CGPoint(x: -5, y: -10))
-        refreshPath.addLine(to: CGPoint(x: 0, y: -5))
-        
-        restartIcon.path = refreshPath.cgPath
-        restartIcon.strokeColor = .white
-        restartIcon.lineWidth = 2
-        restartButton.addChild(restartIcon)
-    }
-    
     private func setupShips() {
         // Очищаем существующие корабли
         shipNodes.values.forEach { $0.removeFromParent() }
@@ -275,14 +158,11 @@ class GameScene: SKScene {
         let horizontalPathY = screenSize.height / 2
         let verticalPathX = screenSize.width / 2
         
-        // Позиции кораблей (точно как на скриншоте)
+        // Позиции кораблей
         let topShipPosition = CGPoint(x: verticalPathX, y: horizontalPathY - dockSize.height/2 - pathWidth)
         let rightShipPosition = CGPoint(x: verticalPathX + dockSize.width/2 + pathWidth, y: horizontalPathY)
         let bottomShipPosition = CGPoint(x: verticalPathX, y: horizontalPathY + dockSize.height/2 + pathWidth)
         let leftShipPosition = CGPoint(x: verticalPathX - dockSize.width/2 - pathWidth, y: horizontalPathY)
-        
-        // Уровень 1 - как на скриншоте
-        // Каждый корабль создается с правильным поворотом и буквой
         
         // Верхний корабль - смотрит вниз, поворот налево
         createShip(at: topShipPosition, rotation: .pi/2, turnPattern: .left, color: .systemBlue)
@@ -295,8 +175,6 @@ class GameScene: SKScene {
         
         // Левый корабль - смотрит вправо, поворот направо
         createShip(at: leftShipPosition, rotation: 0, turnPattern: .right, color: .systemBlue)
-        
-        updateDebugLabel("Нажмите на корабль, чтобы начать")
     }
 
     private func createShip(
@@ -365,31 +243,6 @@ class GameScene: SKScene {
         ])
         shipNode.run(.repeatForever(pulse))
     }
-
-    
-    private func setupLevelLabel() {
-        // Добавляем метку с номером уровня (как на скриншоте)
-        let levelLabel = SKLabelNode(fontNamed: "ChalkboardSE-Bold")
-        levelLabel.text = "LVL \(viewModel?.currentLevel?.id ?? 1)"
-        levelLabel.fontSize = 30
-        levelLabel.fontColor = .yellow
-        levelLabel.position = CGPoint(x: screenSize.width / 2, y: 30)
-        levelLabel.zPosition = 5
-        levelLabel.horizontalAlignmentMode = .center
-        levelLabel.verticalAlignmentMode = .center
-        
-        // Добавляем тень для лучшей видимости
-        levelLabel.attributedText = NSAttributedString(
-            string: levelLabel.text ?? "",
-            attributes: [
-                NSAttributedString.Key.strokeColor: UIColor.darkGray,
-                NSAttributedString.Key.strokeWidth: -3.0,
-                NSAttributedString.Key.foregroundColor: UIColor.yellow
-            ]
-        )
-        
-        addChild(levelLabel)
-    }
     
     // MARK: - Touch Handling
     
@@ -428,8 +281,6 @@ class GameScene: SKScene {
     }
     
     private func startShipMovement(_ shipNode: SKSpriteNode) {
-        updateDebugLabel("Корабль начал движение!")
-        
         // Помечаем корабль как движущийся
         shipNode.userData?.setValue(true, forKey: "isMoving")
         
@@ -522,20 +373,19 @@ class GameScene: SKScene {
         }
         
         // Проверка столкновения с другими кораблями
-        for (id, otherShip) in shipNodes {
-            // Пропускаем проверку с самим собой
-            guard otherShip != shipNode,
-                  let otherIsMoving = otherShip.userData?.value(forKey: "isMoving") as? Bool,
-                  otherIsMoving == true else { continue }
+        for (_, otherShip) in shipNodes {
+            // пропускаем себя
+            guard otherShip != shipNode else { continue }
             
-            // Вычисляем расстояние между кораблями
-            let distance = hypot(
-                shipNode.position.x - otherShip.position.x,
-                shipNode.position.y - otherShip.position.y
-            )
+            // вычисляем расстояние между центрами
+            let dx = shipNode.position.x - otherShip.position.x
+            let dy = shipNode.position.y - otherShip.position.y
+            let distance = hypot(dx, dy)
             
-            // Если корабли столкнулись
-            if distance < (shipNode.size.width + otherShip.size.width) / 3 {
+            // порог столкновения — сумма "радиусов" (половин ширины) обоих кораблей
+            let collisionThreshold = (shipNode.size.width + otherShip.size.width) / 2
+            
+            if distance < collisionThreshold {
                 handleCollision(shipNode, otherShipNode: otherShip)
                 return
             }
@@ -639,8 +489,6 @@ class GameScene: SKScene {
         // Останавливаем игру
         isGameRunning = false
         
-        updateDebugLabel("Уровень пройден!")
-        
         // Создаем эффект завершения уровня
         let victoryLabel = SKLabelNode(fontNamed: "ChalkboardSE-Bold")
         victoryLabel.text = "УРОВЕНЬ ПРОЙДЕН!"
@@ -677,15 +525,11 @@ class GameScene: SKScene {
         isGameRunning = false
         shipsReachedExit = 0
         shipNodes.removeAll()
-        
-        // Настраиваем сцену заново
-        setupDebugLabel()
         setupScene()
         
         // Запускаем игру после короткой задержки
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isGameRunning = true
-            self.updateDebugLabel("Игра перезапущена. Найдите правильную последовательность запуска кораблей!")
         }
     }
 }
