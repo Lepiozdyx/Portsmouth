@@ -299,43 +299,42 @@ class GameScene: SKScene {
         updateDebugLabel("Нажмите на корабль, чтобы начать")
     }
 
-    private func createShip(at position: CGPoint, rotation: CGFloat, turnPattern: TurnDirection, color: UIColor) {
-        // Создаем узел для корабля
-        let shipNode = SKSpriteNode(color: .clear, size: CGSize(width: pathWidth * 1.2, height: pathWidth * 1.8))
+    private func createShip(
+        at position: CGPoint,
+        rotation: CGFloat,
+        turnPattern: TurnDirection,
+        color: UIColor
+    ) {
+        // 1. Создаём контейнерный узел
+        let shipNode = SKSpriteNode(
+            color: .clear,
+            size: CGSize(width: pathWidth * 1.2, height: pathWidth * 1.8)
+        )
         shipNode.position = position
         shipNode.zRotation = rotation
         shipNode.zPosition = 10
         shipNode.name = "ship"
-        
-        // Создаем треугольную форму корабля
+
+        // 2. Строим треугольник: нос → вправо
         let shipShape = SKShapeNode()
+        let halfW = shipNode.size.width  / 2
+        let halfH = shipNode.size.height / 2
         let shipPath = UIBezierPath()
-        
-        // Рисуем простой треугольник для корабля
-        shipPath.move(to: CGPoint(x: 0, y: -shipNode.size.height/2)) // Нос
-        shipPath.addLine(to: CGPoint(x: shipNode.size.width/2, y: shipNode.size.height/2)) // Правый борт
-        shipPath.addLine(to: CGPoint(x: -shipNode.size.width/2, y: shipNode.size.height/2)) // Левый борт
+        shipPath.move(to: CGPoint(x:  halfW, y:  0))      // нос
+        shipPath.addLine(to: CGPoint(x: -halfW, y:  halfH)) // правая задняя точка
+        shipPath.addLine(to: CGPoint(x: -halfW, y: -halfH)) // левая задняя точка
         shipPath.close()
-        
         shipShape.path = shipPath.cgPath
         shipShape.fillColor = color
         shipShape.strokeColor = .white
         shipShape.lineWidth = 2
         shipNode.addChild(shipShape)
-        
-        // Добавляем буквенное обозначение паттерна поворота
+
+        // 3. Добавляем букву паттерна поворота
         let label = SKLabelNode(fontNamed: "Arial-Bold")
-        
-        // Присваиваем букву в зависимости от паттерна (как на скриншоте)
         switch turnPattern {
         case .left:
-            // На скриншоте для поворота налево используется буква "Г" или "L"
-            if rotation == .pi/2 || rotation == .pi {
-                // Для верхнего и правого кораблей
-                label.text = "Г"
-            } else {
-                label.text = "L"
-            }
+            label.text = "L"
         case .right:
             label.text = "R"
         case .straight:
@@ -343,36 +342,30 @@ class GameScene: SKScene {
         case .reverse:
             label.text = "U"
         }
-        
         label.fontSize = 30
         label.fontColor = .black
-        label.position = CGPoint(x: 0, y: 0)
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .center
+        label.position = .zero
         label.zPosition = 11
-        label.name = "pattern_label"
-        
         shipNode.addChild(label)
-        
-        // Сохраняем информацию о корабле
+
+        // 4. Сохраняем данные и добавляем интерактивность
         let shipId = UUID()
-        shipNode.userData = NSMutableDictionary()
-        shipNode.userData?.setValue(shipId.uuidString, forKey: "id")
-        shipNode.userData?.setValue(turnPattern.rawValue, forKey: "turnPattern")
-        shipNode.userData?.setValue(false, forKey: "isMoving")
-        shipNode.userData?.setValue(0, forKey: "intersectionsPassed")
-        
+        shipNode.userData = [
+            "id": shipId.uuidString,
+            "turnPattern": turnPattern.rawValue,
+            "isMoving": false,
+            "intersectionsPassed": 0
+        ]
         addChild(shipNode)
         shipNodes[shipId] = shipNode
-        
-        // Добавляем индикацию, что корабль интерактивен
-        let pulseAction = SKAction.sequence([
+
+        let pulse = SKAction.sequence([
             SKAction.scale(to: 1.1, duration: 0.5),
             SKAction.scale(to: 1.0, duration: 0.5)
         ])
-        let repeatPulse = SKAction.repeatForever(pulseAction)
-        shipNode.run(repeatPulse)
+        shipNode.run(.repeatForever(pulse))
     }
+
     
     private func setupLevelLabel() {
         // Добавляем метку с номером уровня (как на скриншоте)

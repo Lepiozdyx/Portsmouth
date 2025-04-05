@@ -89,14 +89,6 @@ struct GameView: View {
                 }
                 .padding()
                 
-                // Добавляем текст с инструкцией для пользователя
-                Text("Нажмите на корабль, чтобы начать")
-                    .font(.headline)
-                    .padding(8)
-                    .background(Color.white.opacity(0.8))
-                    .cornerRadius(10)
-                    .shadow(radius: 2)
-                
                 Spacer()
             }
             
