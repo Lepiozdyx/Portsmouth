@@ -73,7 +73,7 @@ class GameScene: SKScene {
         // Создаем голубой фон с эффектом волн
         backgroundColor = SKColor(red: 0.2, green: 0.6, blue: 0.9, alpha: 1.0)
         
-        // Добавляем текстуру воды (для визуального эффекта, как на скриншоте)
+        // Добавляем текстуру воды (для визуального эффекта)
         for i in 0..<3 {
             for j in 0..<4 {
                 let waterPattern = SKSpriteNode(color: .clear, size: CGSize(width: size.width / 3, height: size.height / 4))
@@ -137,6 +137,8 @@ class GameScene: SKScene {
         }
     }
     
+
+    
     private func createDock(at position: CGPoint) {
         let dock = SKShapeNode(rectOf: dockSize, cornerRadius: 10)
         dock.fillColor = .gray
@@ -164,17 +166,17 @@ class GameScene: SKScene {
         let bottomShipPosition = CGPoint(x: verticalPathX, y: horizontalPathY + dockSize.height/2 + pathWidth)
         let leftShipPosition = CGPoint(x: verticalPathX - dockSize.width/2 - pathWidth, y: horizontalPathY)
         
-        // Верхний корабль - смотрит вниз, поворот налево
+        // Верхний корабль - смотрит вниз (к центру), поворот налево
         createShip(at: topShipPosition, rotation: .pi/2, turnPattern: .left, color: .systemBlue)
         
-        // Правый корабль - смотрит влево, поворот налево
-        createShip(at: rightShipPosition, rotation: .pi, turnPattern: .left, color: .systemBlue)
+        // Правый корабль - смотрит ВПРАВО (от центра), движется прямо
+        createShip(at: rightShipPosition, rotation: 0, turnPattern: .straight, color: .systemGreen)
         
-        // Нижний корабль - смотрит вверх, поворот направо
-        createShip(at: bottomShipPosition, rotation: -.pi/2, turnPattern: .right, color: .systemBlue)
+        // Нижний корабль - смотрит вверх (к центру), поворот направо
+        createShip(at: bottomShipPosition, rotation: -.pi/2, turnPattern: .right, color: .systemRed)
         
-        // Левый корабль - смотрит вправо, поворот направо
-        createShip(at: leftShipPosition, rotation: 0, turnPattern: .right, color: .systemBlue)
+        // Левый корабль - смотрит вправо (к центру), поворот направо
+        createShip(at: leftShipPosition, rotation: 0, turnPattern: .right, color: .systemOrange)
     }
 
     private func createShip(
@@ -186,7 +188,7 @@ class GameScene: SKScene {
         // 1. Создаём контейнерный узел
         let shipNode = SKSpriteNode(
             color: .clear,
-            size: CGSize(width: pathWidth * 1.2, height: pathWidth * 1.8)
+            size: CGSize(width: pathWidth * 0.8, height: pathWidth * 1.4)
         )
         shipNode.position = position
         shipNode.zRotation = rotation
@@ -220,20 +222,20 @@ class GameScene: SKScene {
         case .reverse:
             label.text = "U"
         }
-        label.fontSize = 30
-        label.fontColor = .black
+        label.fontSize = 24
+        label.fontColor = .white
         label.position = .zero
         label.zPosition = 11
         shipNode.addChild(label)
 
         // 4. Сохраняем данные и добавляем интерактивность
         let shipId = UUID()
-        shipNode.userData = [
+        shipNode.userData = NSMutableDictionary(dictionary: [
             "id": shipId.uuidString,
             "turnPattern": turnPattern.rawValue,
             "isMoving": false,
             "intersectionsPassed": 0
-        ]
+        ])
         addChild(shipNode)
         shipNodes[shipId] = shipNode
 
@@ -253,25 +255,13 @@ class GameScene: SKScene {
         let nodes = nodes(at: location)
         
         for node in nodes {
-            // Обработка нажатия на кнопку "назад"
-            if node.name == "backButton" {
-                viewModel?.goToMenu()
-                return
-            }
-            
-            // Обработка нажатия на кнопку "перезапуск"
-            if node.name == "restartButton" {
-                resetScene()
-                viewModel?.resetGameState()
-                return
-            }
-            
             // Обработка нажатия на корабль
             if isGameRunning && (node.name == "ship" || node.parent?.name == "ship") {
                 let shipNode = node.name == "ship" ? node as? SKSpriteNode : node.parent as? SKSpriteNode
                 
                 if let shipNode = shipNode,
-                   let isMovingValue = shipNode.userData?.value(forKey: "isMoving") as? Bool,
+                   let userData = shipNode.userData as? NSMutableDictionary,
+                   let isMovingValue = userData["isMoving"] as? Bool,
                    !isMovingValue {
                     startShipMovement(shipNode)
                     return
@@ -282,7 +272,9 @@ class GameScene: SKScene {
     
     private func startShipMovement(_ shipNode: SKSpriteNode) {
         // Помечаем корабль как движущийся
-        shipNode.userData?.setValue(true, forKey: "isMoving")
+        if let userData = shipNode.userData as? NSMutableDictionary {
+            userData["isMoving"] = true
+        }
         
         // Останавливаем анимацию пульсации
         shipNode.removeAllActions()
@@ -362,10 +354,11 @@ class GameScene: SKScene {
         // Если корабль достиг перекрестка (с некоторой погрешностью)
         if distance < intersectionSize / 2 {
             // Проверяем, проходил ли уже корабль перекресток
-            if let intersectionsPassed = shipNode.userData?.value(forKey: "intersectionsPassed") as? Int,
+            if let userData = shipNode.userData as? NSMutableDictionary,
+               let intersectionsPassed = userData["intersectionsPassed"] as? Int,
                intersectionsPassed == 0 {
                 // Отмечаем, что корабль прошел перекресток
-                shipNode.userData?.setValue(1, forKey: "intersectionsPassed")
+                userData["intersectionsPassed"] = 1
                 
                 // Применяем поворот на перекрестке
                 handleIntersection(shipNode)
@@ -382,8 +375,8 @@ class GameScene: SKScene {
             let dy = shipNode.position.y - otherShip.position.y
             let distance = hypot(dx, dy)
             
-            // порог столкновения — сумма "радиусов" (половин ширины) обоих кораблей
-            let collisionThreshold = (shipNode.size.width + otherShip.size.width) / 2
+            // порог столкновения — половина суммы ширин кораблей
+            let collisionThreshold = (shipNode.size.width + otherShip.size.width) * 0.4
             
             if distance < collisionThreshold {
                 handleCollision(shipNode, otherShipNode: otherShip)
@@ -394,72 +387,108 @@ class GameScene: SKScene {
     
     private func handleIntersection(_ shipNode: SKSpriteNode) {
         // Получаем паттерн поворота
-        if let turnPatternValue = shipNode.userData?.value(forKey: "turnPattern") as? String,
-           let turnPattern = TurnDirection(rawValue: turnPatternValue) {
+        guard let userData = shipNode.userData as? NSMutableDictionary,
+              let turnPatternValue = userData["turnPattern"] as? String,
+              let turnPattern = TurnDirection(rawValue: turnPatternValue) else {
+            return
+        }
+        
+        // Останавливаем движение
+        shipNode.removeAction(forKey: "movement")
+        
+        // Определяем угол поворота в зависимости от паттерна
+        var rotationDelta: CGFloat = 0
+        
+        switch turnPattern {
+        case .left:
+            rotationDelta = .pi/2 // поворот налево на 90°
+        case .right:
+            rotationDelta = -.pi/2 // поворот направо на 90°
+        case .reverse:
+            rotationDelta = .pi // разворот на 180°
+        case .straight:
+            rotationDelta = 0 // продолжение движения прямо
+        }
+        
+        // Применяем поворот, если нужен
+        if rotationDelta != 0 {
+            let newRotation = shipNode.zRotation + rotationDelta
+            let rotateAction = SKAction.rotate(toAngle: newRotation, duration: 0.3)
             
-            // Останавливаем движение
-            shipNode.removeAction(forKey: "movement")
-            
-            // Определяем угол поворота в зависимости от паттерна
-            var rotationDelta: CGFloat = 0
-            
-            switch turnPattern {
-            case .left:
-                rotationDelta = .pi/2 // поворот налево на 90°
-            case .right:
-                rotationDelta = -.pi/2 // поворот направо на 90°
-            case .reverse:
-                rotationDelta = .pi // разворот на 180°
-            case .straight:
-                rotationDelta = 0 // продолжение движения прямо
-            }
-            
-            // Применяем поворот, если нужен
-            if rotationDelta != 0 {
-                let newRotation = shipNode.zRotation + rotationDelta
-                let rotateAction = SKAction.rotate(toAngle: newRotation, duration: 0.3)
-                
-                shipNode.run(rotateAction) { [weak self] in
-                    // После поворота продолжаем движение в новом направлении
-                    if let self = self {
-                        let newDirection = self.getDirectionFromRotation(shipNode.zRotation)
-                        self.moveShip(shipNode, direction: newDirection)
-                    }
+            shipNode.run(rotateAction) { [weak self] in
+                // После поворота продолжаем движение в новом направлении
+                if let self = self {
+                    let newDirection = self.getDirectionFromRotation(shipNode.zRotation)
+                    self.moveShip(shipNode, direction: newDirection)
                 }
-            } else {
-                // Если нет поворота, просто продолжаем движение
-                let direction = getDirectionFromRotation(shipNode.zRotation)
-                moveShip(shipNode, direction: direction)
             }
+        } else {
+            // Если нет поворота, просто продолжаем движение
+            let direction = getDirectionFromRotation(shipNode.zRotation)
+            moveShip(shipNode, direction: direction)
         }
     }
     
     private func handleCollision(_ shipNode: SKSpriteNode, otherShipNode: SKSpriteNode) {
-        // Останавливаем движение обоих кораблей
-        shipNode.removeAllActions()
-        otherShipNode.removeAllActions()
-        
-        // Анимация столкновения
-        let redColorAction = SKAction.colorize(with: .red, colorBlendFactor: 0.8, duration: 0.2)
-        shipNode.run(redColorAction)
-        otherShipNode.run(redColorAction)
-        
-        // Эффект взрыва
-        let explosion = SKEmitterNode(fileNamed: "Explosion")
-        explosion?.position = CGPoint(
-            x: (shipNode.position.x + otherShipNode.position.x) / 2,
-            y: (shipNode.position.y + otherShipNode.position.y) / 2
-        )
-        explosion?.zPosition = 20
-        addChild(explosion!)
+        // Проверяем, не находимся ли мы уже в состоянии столкновения
+        guard isGameRunning else { return }
         
         // Останавливаем игру
         isGameRunning = false
         
-        // Уведомляем ViewModel о столкновении
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.viewModel?.shipCollision()
+        // Останавливаем движение всех кораблей
+        for (_, ship) in shipNodes {
+            ship.removeAllActions()
         }
+        
+        // Анимация столкновения
+        let explosion = SKEmitterNode(fileNamed: "Explosion") ?? createExplosionEmitter()
+        explosion.position = CGPoint(
+            x: (shipNode.position.x + otherShipNode.position.x) / 2,
+            y: (shipNode.position.y + otherShipNode.position.y) / 2
+        )
+        explosion.zPosition = 20
+        addChild(explosion)
+        
+        // Визуальный эффект столкновения
+        let redColorAction = SKAction.colorize(with: .red, colorBlendFactor: 0.8, duration: 0.2)
+        shipNode.run(redColorAction)
+        otherShipNode.run(redColorAction)
+        
+        // Уведомляем ViewModel о столкновении после небольшой задержки
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.viewModel?.shipCollision()
+        }
+    }
+    
+    private func createExplosionEmitter() -> SKEmitterNode {
+        // Создаем эмиттер вручную, если файл не найден
+        let explosion = SKEmitterNode()
+        explosion.particleTexture = SKTexture(imageNamed: "spark")
+        explosion.particleBirthRate = 500
+        explosion.numParticlesToEmit = 50
+        explosion.particleLifetime = 2.0
+        explosion.emissionAngle = 0
+        explosion.emissionAngleRange = 2 * .pi
+        explosion.particleSpeed = 50
+        explosion.particleSpeedRange = 50
+        explosion.particleAlpha = 1.0
+        explosion.particleAlphaRange = 0.0
+        explosion.particleAlphaSpeed = -0.5
+        explosion.particleScale = 0.5
+        explosion.particleScaleRange = 0.25
+        explosion.particleScaleSpeed = -0.25
+        explosion.particleColor = .orange
+        explosion.particleColorBlendFactor = 1.0
+        explosion.particleColorBlendFactorRange = 0.3
+        explosion.particleColorBlendFactorSpeed = -0.5
+        explosion.particleColorSequence = SKKeyframeSequence(keyframeValues: [
+            UIColor.red,
+            UIColor.orange,
+            UIColor.yellow,
+            UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 0.0)
+        ], times: [0.0, 0.1, 0.3, 1.0])
+        return explosion
     }
     
     private func shipExitedGrid(_ shipNode: SKSpriteNode) {
@@ -467,7 +496,8 @@ class GameScene: SKScene {
         shipNode.removeAllActions()
         
         // Удаляем корабль из сцены
-        if let shipId = shipNode.userData?.value(forKey: "id") as? String,
+        if let userData = shipNode.userData as? NSMutableDictionary,
+           let shipId = userData["id"] as? String,
            let uuid = UUID(uuidString: shipId) {
             shipNodes.removeValue(forKey: uuid)
         }
@@ -489,28 +519,8 @@ class GameScene: SKScene {
         // Останавливаем игру
         isGameRunning = false
         
-        // Создаем эффект завершения уровня
-        let victoryLabel = SKLabelNode(fontNamed: "ChalkboardSE-Bold")
-        victoryLabel.text = "УРОВЕНЬ ПРОЙДЕН!"
-        victoryLabel.fontSize = 40
-        victoryLabel.fontColor = .green
-        victoryLabel.position = CGPoint(x: screenSize.width/2, y: screenSize.height/2)
-        victoryLabel.zPosition = 100
-        victoryLabel.horizontalAlignmentMode = .center
-        victoryLabel.alpha = 0
-        
-        addChild(victoryLabel)
-        
-        // Анимация появления
-        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
-        let scaleUp = SKAction.scale(to: 1.2, duration: 0.5)
-        let wait = SKAction.wait(forDuration: 0.5)
-        
-        victoryLabel.run(SKAction.sequence([
-            SKAction.group([fadeIn, scaleUp]),
-            wait
-        ])) { [weak self] in
-            // Уведомляем ViewModel о завершении уровня
+        // Уведомляем ViewModel о завершении уровня
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.viewModel?.completeLevel()
         }
     }
@@ -525,6 +535,8 @@ class GameScene: SKScene {
         isGameRunning = false
         shipsReachedExit = 0
         shipNodes.removeAll()
+        
+        // Настраиваем сцену заново
         setupScene()
         
         // Запускаем игру после короткой задержки
