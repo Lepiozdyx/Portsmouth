@@ -30,7 +30,7 @@ class GameViewModel: ObservableObject {
         player = dataManager.loadPlayer()
         
         // Настройка уровней
-        setupLevels()
+//        setupLevels()
         
         // Настройка магазина
         setupShopItems()
@@ -53,32 +53,30 @@ class GameViewModel: ObservableObject {
     
     // MARK: - Setup methods
     
-    private func setupLevels() {
-        // Создаем 10 уровней с разной сложностью
-        levels = (1...10).map { levelId in
-            createLevel(id: levelId)
-        }
-    }
+//    private func setupLevels() {
+//        // Создаем 10 уровней с разной сложностью
+//        levels = (1...10).map { levelId in
+//            createLevel(id: levelId)
+//        }
+//    }
     
-    private func createLevel(id: Int) -> Level {
-        // Настраиваем уровень в зависимости от его ID
-        // В реальной игре здесь будет более сложная логика
-        
-        var ships: [Ship] = []
-        var intersections: [Intersection] = []
-        
-        // Для упрощенной версии мы будем использовать шаблонные перекрестки
-        // и формировать корабли в коде GameScene
-        
-        return Level(
-            id: id,
-            name: "Уровень \(id)",
-            ships: ships, // Пустой массив, корабли будут создаваться в GameScene
-            backgroundType: player.currentBackgroundEnum,
-            isUnlocked: id == 1 || player.completedLevels[id - 1] == true,
-            intersections: intersections // Пустой массив, перекрестки будут созданы в GameScene
-        )
-    }
+//    private func createLevel(id: Int) -> Level {
+//        // Настраиваем уровень в зависимости от его ID
+//        // В реальной игре здесь будет более сложная логика
+//
+//        
+//        // Для упрощенной версии мы будем использовать шаблонные перекрестки
+//        // и формировать корабли в коде GameScene
+//        
+//        return Level(
+//            id: id,
+//            name: "Уровень \(id)",
+//            ships: ships, // Пустой массив, корабли будут создаваться в GameScene
+//            backgroundType: player.currentBackgroundEnum,
+//            isUnlocked: id == 1 || player.completedLevels[id - 1] == true,
+//            intersections: intersections // Пустой массив, перекрестки будут созданы в GameScene
+//        )
+//    }
     
     private func setupShopItems() {
         // Создаем товары для магазина
