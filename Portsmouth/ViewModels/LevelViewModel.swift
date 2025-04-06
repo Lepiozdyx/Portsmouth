@@ -100,4 +100,24 @@ class LevelViewModel: ObservableObject {
     func gridPositionToScenePosition(_ gridPosition: GridPosition) -> CGPoint {
         return gridPosition.toPoint(cellSize: level.gridSettings.cellSize)
     }
+    
+    /// Обновить размер ячейки в модели
+    func updateCellSize(_ newCellSize: CGFloat) {
+        // Создаем новые настройки сетки с обновленным размером ячейки
+        let newGridSettings = GridSettings(
+            width: level.gridSettings.width,
+            height: level.gridSettings.height,
+            cellSize: newCellSize
+        )
+        
+        // Обновляем модель уровня
+        level = LevelModel(
+            id: level.id,
+            name: level.name,
+            gridSettings: newGridSettings,
+            ships: level.ships,
+            intersections: level.intersections,
+            obstacles: level.obstacles
+        )
+    }
 }

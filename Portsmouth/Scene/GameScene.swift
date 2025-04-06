@@ -1,4 +1,5 @@
 import SpriteKit
+import SwiftUICore
 import GameplayKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -29,10 +30,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Набор позиций препятствий
     private var obstaclePositions = Set<GridPosition>()
     
+    /// Размеры реального экрана и безопасные области
+    private var screenSize: CGSize = .zero
+    private var safeAreaInsets: UIEdgeInsets = .zero
+    
+    /// Узел-контейнер для игрового поля (для центрирования)
+    private var gameContainerNode: SKNode?
+    
     // MARK: - Жизненный цикл
     
     override func didMove(to view: SKView) {
-        backgroundColor = SKColor.blue.withAlphaComponent(0.5) // Светло-голубой цвет для воды
+        backgroundColor = SKColor.systemTeal.withAlphaComponent(0.5) // Светло-голубой цвет для воды
         
         // Настройка физики
         physicsWorld.gravity = .zero
@@ -45,13 +53,77 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupScreenBoundaries()
     }
     
+    // MARK: - Обновление размеров
+    
+    /// Обновить размеры сцены на основе размера экрана
+    func updateSceneSize(size: CGSize, safeArea: EdgeInsets) {
+        screenSize = size
+        safeAreaInsets = UIEdgeInsets(
+            top: safeArea.top,
+            left: safeArea.leading,
+            bottom: safeArea.bottom,
+            right: safeArea.trailing
+        )
+        
+        // Обновляем размер сцены
+        self.size = size
+        
+        // Если уровень уже настроен, обновим его размеры
+        if let level = levelViewModel?.level, gameContainerNode != nil {
+            updateCellSize(level: level)
+            recenterGameBoard()
+        }
+    }
+    
+    private func updateCellSize(level: LevelModel) {
+        // Вычисляем размер ячейки на основе размера экрана и размера сетки
+        // с учетом безопасных областей и небольшого отступа
+        let padding: CGFloat = 20.0
+        
+        let availableWidth = screenSize.width - safeAreaInsets.left - safeAreaInsets.right - (padding * 2)
+        let availableHeight = screenSize.height - safeAreaInsets.top - safeAreaInsets.bottom - (padding * 2)
+        
+        let cellWidthByWidth = availableWidth / CGFloat(level.gridSettings.width)
+        let cellHeightByHeight = availableHeight / CGFloat(level.gridSettings.height)
+        
+        // Используем меньший размер для сохранения пропорций
+        cellSize = min(cellWidthByWidth, cellHeightByHeight)
+        
+        // Обновляем размер ячейки в модели
+        levelViewModel.updateCellSize(cellSize)
+    }
+    
+    private func recenterGameBoard() {
+        guard let level = levelViewModel?.level,
+              let gameContainer = gameContainerNode else { return }
+        
+        // Вычисляем полный размер игрового поля
+        let gridWidth = CGFloat(level.gridSettings.width) * cellSize
+        let gridHeight = CGFloat(level.gridSettings.height) * cellSize
+        
+        // Центрируем игровое поле в сцене
+        let centerX = (screenSize.width - gridWidth) / 2
+        let centerY = (screenSize.height - gridHeight) / 2
+        
+        gameContainer.position = CGPoint(x: centerX, y: centerY)
+    }
+    
     private func setupScreenBoundaries() {
-        let borderBody = SKPhysicsBody(edgeLoopFrom: self.frame)
+        guard let level = levelViewModel?.level else { return }
+        
+        // Создаем физические границы вокруг видимой области игрового поля
+        let gridWidth = CGFloat(level.gridSettings.width) * cellSize
+        let gridHeight = CGFloat(level.gridSettings.height) * cellSize
+        
+        let boundaryRect = CGRect(x: 0, y: 0, width: gridWidth, height: gridHeight)
+        let borderBody = SKPhysicsBody(edgeLoopFrom: boundaryRect)
         borderBody.categoryBitMask = PhysicsCategory.boundary
         borderBody.contactTestBitMask = PhysicsCategory.ship
         borderBody.collisionBitMask = PhysicsCategory.none
         
-        self.physicsBody = borderBody
+        if let gameContainer = gameContainerNode {
+            gameContainer.physicsBody = borderBody
+        }
     }
     
     // MARK: - Настройка уровня
@@ -59,33 +131,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupLevel() {
         guard let level = levelViewModel?.level else { return }
         
-        // Получаем настройки сетки
-        cellSize = level.gridSettings.cellSize
-        
         // Очищаем предыдущие ноды, если они есть
         removeAllChildren()
         shipNodes.removeAll()
         intersectionPositions.removeAll()
         obstaclePositions.removeAll()
         
-        // Устанавливаем размер сцены
-        let gridSize = levelViewModel.getGridSizeInPoints()
-        size = gridSize
+        // Обновляем размер ячейки на основе размера экрана
+        updateCellSize(level: level)
+        
+        // Создаем контейнер для всех элементов игры
+        let gameContainer = SKNode()
+        addChild(gameContainer)
+        gameContainerNode = gameContainer
         
         // Отрисовка фона (сетка)
-        setupGrid(width: level.gridSettings.width, height: level.gridSettings.height)
+        setupGrid(width: level.gridSettings.width, height: level.gridSettings.height, parent: gameContainer)
         
         // Размещение препятствий
-        setupObstacles(level.obstacles)
+        setupObstacles(level.obstacles, parent: gameContainer)
         
         // Размещение перекрестков
-        setupIntersections(level.intersections)
+        setupIntersections(level.intersections, parent: gameContainer)
         
         // Размещение кораблей
-        setupShips(level.ships)
+        setupShips(level.ships, parent: gameContainer)
+        
+        // Центрируем игровое поле в сцене
+        recenterGameBoard()
+        
+        // Обновляем границы для определения выхода кораблей
+        setupScreenBoundaries()
     }
     
-    private func setupGrid(width: Int, height: Int) {
+    private func setupGrid(width: Int, height: Int, parent: SKNode) {
         // Отрисовка сетки для отладки
         let gridNode = SKNode()
         
@@ -115,16 +194,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             gridNode.addChild(line)
         }
         
-        addChild(gridNode)
+        parent.addChild(gridNode)
     }
     
-    private func setupObstacles(_ obstacles: [ObstacleModel]) {
+    private func setupObstacles(_ obstacles: [ObstacleModel], parent: SKNode) {
         for obstacle in obstacles {
             // Сохраняем позицию препятствия
             obstaclePositions.insert(obstacle.gridPosition)
             
             // Создаем визуальное представление препятствия
-            let position = levelViewModel.gridPositionToScenePosition(obstacle.gridPosition)
+            let position = obstacle.gridPosition.toPoint(cellSize: cellSize)
             let obstacleNode = SKSpriteNode(color: .brown, size: CGSize(width: cellSize, height: cellSize))
             obstacleNode.position = position
             
@@ -135,30 +214,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             obstacleNode.physicsBody?.contactTestBitMask = PhysicsCategory.none
             obstacleNode.physicsBody?.collisionBitMask = PhysicsCategory.none
             
-            addChild(obstacleNode)
+            parent.addChild(obstacleNode)
         }
     }
     
-    private func setupIntersections(_ intersections: [IntersectionModel]) {
+    private func setupIntersections(_ intersections: [IntersectionModel], parent: SKNode) {
         for intersection in intersections {
             // Сохраняем позицию перекрестка
             intersectionPositions.insert(intersection.gridPosition)
             
             // Создаем визуальное представление перекрестка (опционально)
-            let position = levelViewModel.gridPositionToScenePosition(intersection.gridPosition)
+            let position = intersection.gridPosition.toPoint(cellSize: cellSize)
             let intersectionNode = SKShapeNode(circleOfRadius: cellSize / 4)
             intersectionNode.position = position
             intersectionNode.fillColor = .yellow
             intersectionNode.alpha = 0.5 // Полупрозрачное для отладки
             
-            addChild(intersectionNode)
+            parent.addChild(intersectionNode)
         }
     }
     
-    private func setupShips(_ ships: [ShipModel]) {
+    private func setupShips(_ ships: [ShipModel], parent: SKNode) {
         for ship in ships {
             // Создаем корабль
-            let position = levelViewModel.gridPositionToScenePosition(ship.initialGridPosition)
+            let position = ship.initialGridPosition.toPoint(cellSize: cellSize)
             let shipNode = ShipNode(
                 size: CGSize(width: cellSize * 0.8, height: cellSize * 0.8),
                 direction: ship.direction,
@@ -177,7 +256,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Добавляем в словарь и на сцену
             shipNodes[ship.id] = shipNode
-            addChild(shipNode)
+            parent.addChild(shipNode)
         }
     }
     
@@ -319,12 +398,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     // MARK: - Вспомогательные методы
-    
-    /// Проверка, находится ли позиция за пределами экрана
-    private func isOutOfBounds(position: CGPoint) -> Bool {
-        return position.x < 0 || position.y < 0 ||
-               position.x > size.width || position.y > size.height
-    }
     
     /// Преобразование позиции сцены в координаты сетки
     private func scenePositionToGridPosition(_ position: CGPoint) -> GridPosition {
