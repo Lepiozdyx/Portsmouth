@@ -1,41 +1,30 @@
-//
-//  ContentView.swift
-//  Portsmouth
-//
-//  Created by Alex on 05.04.2025.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var viewModel = GameViewModel()
+    // MARK: - ViewModel
+    
+    @StateObject private var gameViewModel = GameViewModel()
+    
+    // MARK: - Body
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Основное представление в зависимости от состояния игры
-                switch viewModel.gameState {
+                // Отображаем соответствующий экран в зависимости от состояния игры
+                switch gameViewModel.gameState {
                 case .menu:
-                    MainMenuView(viewModel: viewModel)
-                case .levelSelection:
-                    LevelSelectionView(viewModel: viewModel)
-                case .playing:
-                    GameView(viewModel: viewModel)
-                case .gameOver:
-                    // Обрабатывается внутри GameView
-                    GameView(viewModel: viewModel)
-                case .victory:
-                    // Обрабатывается внутри GameView
-                    GameView(viewModel: viewModel)
-                case .shop:
-                    ShopView(viewModel: viewModel)
-                case .achievements:
-                    AchievementsView(viewModel: viewModel)
+                    MainMenuView(gameViewModel: gameViewModel)
+                    
+                case .levelSelect:
+                    LevelSelectView(gameViewModel: gameViewModel)
+                    
+                case .playing, .paused, .victory, .gameOver:
+                    GameView(gameViewModel: gameViewModel)
                 }
             }
             .navigationBarHidden(true)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .navigationViewStyle(.stack)
     }
 }
 

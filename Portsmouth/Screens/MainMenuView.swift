@@ -1,75 +1,57 @@
-//
-//  MainMenuView.swift
-//  Portsmouth
-//
-//  Created by Alex on 05.04.2025.
-//
-
 import SwiftUI
 
 struct MainMenuView: View {
-    @ObservedObject var viewModel: GameViewModel
+    // MARK: - ViewModel
+    
+    @ObservedObject var gameViewModel: GameViewModel
+    
+    // MARK: - Представление
     
     var body: some View {
-        VStack {
-            // Логотип игры
-            Text("Rivers Portsmouth")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundColor(.blue)
-                .padding(.top, 50)
+        ZStack {
+            // Фоновое изображение или градиент
+            LinearGradient(
+                gradient: Gradient(colors: [.blue, .cyan.opacity(0.8)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            Text("Games")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundColor(.blue.opacity(0.8))
-            
-            Spacer()
-            
-            // Информация об игроке
-            HStack {
-                Image(systemName: "dollarsign.circle.fill")
-                    .foregroundColor(.yellow)
-                    .font(.title)
+            // Контент меню
+            VStack(spacing: 30) {
+                // Счетчик монет
+                HStack {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.yellow)
+                    
+                    Text("\(gameViewModel.coins)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
+                .padding()
+                .background(Color.black.opacity(0.2))
+                .cornerRadius(15)
                 
-                Text("\(viewModel.player.coins)")
-                    .font(.title)
-                    .fontWeight(.bold)
+                Spacer()
+                
+                // Кнопки меню
+                VStack(spacing: 20) {
+                    // Кнопка "Играть"
+                    MenuButton(title: "Играть", icon: "play.fill") {
+                        gameViewModel.showLevelSelection()
+                    }
+                }
+                
+                Spacer()
             }
             .padding()
-            
-            Spacer()
-            
-            // Кнопки меню
-            VStack(spacing: 20) {
-                MenuButton(title: "Играть", icon: "play.fill") {
-                    viewModel.gameState = .levelSelection
-                }
-                
-                MenuButton(title: "Магазин", icon: "cart.fill") {
-                    viewModel.gameState = .shop
-                }
-                
-                MenuButton(title: "Достижения", icon: "star.fill") {
-                    viewModel.gameState = .achievements
-                }
-                
-                MenuButton(title: "Настройки", icon: "gearshape.fill") {
-                    // Будущая функциональность настроек
-                }
-            }
-            
-            Spacer()
-            
-            // Версия игры (для информации)
-            Text("v1.0")
-                .font(.caption)
-                .foregroundColor(.gray)
-                .padding(.bottom)
         }
-        .navigationBarHidden(true)
     }
 }
 
-// Кнопка главного меню
+/// Компонент для кнопки главного меню
 struct MenuButton: View {
     let title: String
     let icon: String
@@ -80,22 +62,20 @@ struct MenuButton: View {
             HStack {
                 Image(systemName: icon)
                     .font(.title2)
-                    .frame(width: 30)
                 
                 Text(title)
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.semibold)
             }
             .foregroundColor(.white)
-            .frame(width: 250)
-            .padding()
-            .background(Color.blue)
+            .frame(width: 250, height: 60)
+            .background(Color.blue.opacity(0.8))
             .cornerRadius(15)
-            .shadow(radius: 3)
+            .shadow(radius: 5)
         }
     }
 }
 
 #Preview {
-    MainMenuView(viewModel: GameViewModel())
+    MainMenuView(gameViewModel: GameViewModel())
 }

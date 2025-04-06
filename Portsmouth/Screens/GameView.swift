@@ -2,359 +2,295 @@ import SwiftUI
 import SpriteKit
 
 struct GameView: View {
-    @ObservedObject var viewModel: GameViewModel
-    @State private var isMenuVisible = false
+    // MARK: - ViewModel
     
-    // Создаем игровую сцену
-    var gameScene: GameScene
+    @ObservedObject var gameViewModel: GameViewModel
+    @StateObject private var levelViewModel: LevelViewModel
     
-    init(viewModel: GameViewModel) {
-        self.viewModel = viewModel
+    // MARK: - Состояние
+    
+    @State private var scene: GameScene?
+    
+    // MARK: - Инициализация
+    
+    init(gameViewModel: GameViewModel) {
+        self.gameViewModel = gameViewModel
         
-        // Создаем сцену с фиксированными размерами
-        let scene = GameScene(size: CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height * 0.8))
-        scene.scaleMode = .aspectFill
-        scene.viewModel = viewModel
-        
-        // Отключаем опции отладки для релиза
-        #if DEBUG
-        scene.view?.showsFPS = true
-        scene.view?.showsNodeCount = true
-        #endif
-        
-        self.gameScene = scene
-        
-        // Сбрасываем состояние игры при инициализации
-        viewModel.resetGameState()
+        // Инициализируем LevelViewModel для текущего уровня
+        let level = gameViewModel.currentLevel ?? LevelManager.shared.getTestLevel()
+        _levelViewModel = StateObject(wrappedValue: LevelViewModel(level: level))
     }
+    
+    // MARK: - Представление
     
     var body: some View {
         ZStack {
-            // SpriteView для отображения SpriteKit сцены
-            SpriteView(scene: gameScene)
-                .ignoresSafeArea()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Основное игровое представление
+            GeometryReader { geometry in
+                SpriteView(scene: getGameScene(size: geometry.size))
+                    .ignoresSafeArea()
+            }
             
-            // UI поверх игровой сцены
+            // Верхний бар с кнопками
             VStack {
-                // Верхняя панель
-                HStack {
-                    // Кнопка назад
-                    Button(action: {
-                        isMenuVisible = true
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.8))
-                                .frame(width: 44, height: 44)
-                                .shadow(radius: 2)
-                            
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Счет с фоном и тенью
-                    HStack(spacing: 4) {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .foregroundColor(.yellow)
-                        
-                        Text("\(viewModel.player.coins)")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(Color.blue.opacity(0.8))
-                            .shadow(radius: 2)
-                    )
-                    
-                    Spacer()
-                    
-                    // Кнопка перезапуска
-                    Button(action: {
-                        gameScene.resetScene()
-                        viewModel.resetGameState()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.8))
-                                .frame(width: 44, height: 44)
-                                .shadow(radius: 2)
-                            
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                topBar
                 
                 Spacer()
             }
             
-            // Модальное окно окончания уровня
-            if viewModel.isLevelCompleted {
-                VictoryView(viewModel: viewModel)
+            // Оверлей паузы
+            if gameViewModel.gameState == .paused {
+                pauseOverlay
             }
             
-            // Модальное окно проигрыша
-            if viewModel.isGameOver && viewModel.gameState == .gameOver {
-                GameOverView(viewModel: viewModel, resetAction: {
-                    gameScene.resetScene()
-                })
+            // Оверлей победы
+            if gameViewModel.gameState == .victory {
+                victoryOverlay
             }
             
-            // Модальное окно возврата в меню
-            if isMenuVisible {
-                MenuConfirmView(
-                    dismiss: { isMenuVisible = false },
-                    goToMenu: { viewModel.goToMenu() }
-                )
+            // Оверлей поражения
+            if gameViewModel.gameState == .gameOver {
+                gameOverOverlay
             }
         }
-        .navigationBarHidden(true)
-        .statusBar(hidden: true)
         .onAppear {
-            // Сбрасываем состояние при появлении экрана
-            viewModel.resetGameState()
-            
-            // Перезапускаем сцену с небольшой задержкой
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                gameScene.resetScene()
-            }
+            setupLevelViewModel()
         }
     }
-}
-
-// Представление победы
-struct VictoryView: View {
-    @ObservedObject var viewModel: GameViewModel
     
-    var body: some View {
+    // MARK: - Компоненты интерфейса
+    
+    private var topBar: some View {
+        HStack {
+            // Кнопка меню (пауза)
+            Button(action: {
+                gameViewModel.pauseGame()
+            }) {
+                Image(systemName: "pause.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .background(Color.blue.opacity(0.7))
+                    .clipShape(Circle())
+            }
+            
+            Spacer()
+            
+            // Счетчик монет
+            HStack {
+                Image(systemName: "dollarsign.circle.fill")
+                    .foregroundColor(.yellow)
+                Text("\(gameViewModel.coins)")
+                    .foregroundColor(.white)
+                    .fontWeight(.bold)
+            }
+            .padding(8)
+            .background(Color.black.opacity(0.5))
+            .cornerRadius(10)
+            
+            Spacer()
+            
+            // Кнопка перезапуска
+            Button(action: {
+                levelViewModel.restartLevel()
+            }) {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .background(Color.blue.opacity(0.7))
+                    .clipShape(Circle())
+            }
+        }
+        .padding()
+    }
+    
+    private var pauseOverlay: some View {
         ZStack {
+            // Затемненный фон
             Color.black.opacity(0.7)
                 .ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                // Изображение трофея
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.yellow)
-                    .shadow(color: .orange, radius: 10, x: 0, y: 0)
-                
-                Text("Уровень пройден!")
-                    .font(.system(size: 28, weight: .bold))
+            // Диалог паузы
+            VStack(spacing: 20) {
+                Text("Пауза")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                     .foregroundColor(.white)
                 
-                HStack(spacing: 8) {
+                // Кнопка продолжения
+                Button(action: {
+                    gameViewModel.resumeGame()
+                }) {
+                    Text("Продолжить")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 200, height: 50)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                }
+                
+                // Кнопка возврата в меню
+                Button(action: {
+                    gameViewModel.returnToMainMenu()
+                }) {
+                    Text("В меню")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 200, height: 50)
+                        .background(Color.gray)
+                        .cornerRadius(10)
+                }
+            }
+        }
+    }
+    
+    private var victoryOverlay: some View {
+        ZStack {
+            // Затемненный фон
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+            
+            // Диалог победы
+            VStack(spacing: 20) {
+                Text("Уровень пройден!")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                HStack {
                     Image(systemName: "dollarsign.circle.fill")
-                        .font(.title2)
+                        .font(.largeTitle)
                         .foregroundColor(.yellow)
                     
                     Text("+100")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.title)
                         .foregroundColor(.yellow)
+                        .fontWeight(.bold)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.systemBackground).opacity(0.2))
-                )
                 
-                HStack(spacing: 20) {
-                    Button(action: {
-                        viewModel.goToMenu()
-                    }) {
-                        HStack {
-                            Image(systemName: "house")
-                            Text("В меню")
-                        }
-                        .font(.headline)
-                        .padding()
-                        .frame(width: 130)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue)
-                        )
+                // Кнопка следующего уровня
+                Button(action: {
+                    gameViewModel.goToNextLevel()
+                }) {
+                    Text("Следующий уровень")
+                        .font(.title3)
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                    }
-                    
-                    Button(action: {
-                        viewModel.nextLevel()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.right")
-                            Text("Дальше")
-                        }
-                        .font(.headline)
-                        .padding()
-                        .frame(width: 130)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.green)
-                        )
+                        .frame(width: 200, height: 50)
+                        .background(Color.green)
+                        .cornerRadius(10)
+                }
+                
+                // Кнопка возврата в меню
+                Button(action: {
+                    gameViewModel.returnToMainMenu()
+                }) {
+                    Text("В меню")
+                        .font(.title3)
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                    }
+                        .frame(width: 200, height: 50)
+                        .background(Color.gray)
+                        .cornerRadius(10)
                 }
             }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(UIColor.systemGray6))
-                    .shadow(radius: 10)
-            )
-            .padding(.horizontal, 32)
         }
     }
-}
-
-// Представление проигрыша
-struct GameOverView: View {
-    @ObservedObject var viewModel: GameViewModel
-    let resetAction: () -> Void
     
-    var body: some View {
+    private var gameOverOverlay: some View {
         ZStack {
+            // Затемненный фон
             Color.black.opacity(0.7)
                 .ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                // Изображение столкновения
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.red)
-                    .shadow(color: .orange, radius: 5, x: 0, y: 0)
-                
-                Text("Столкновение!")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Text("Выберите другой порядок запуска кораблей")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                
-                HStack(spacing: 20) {
-                    Button(action: {
-                        viewModel.goToMenu()
-                    }) {
-                        HStack {
-                            Image(systemName: "house")
-                            Text("В меню")
-                        }
-                        .font(.headline)
-                        .padding()
-                        .frame(width: 130)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue)
-                        )
-                        .foregroundColor(.white)
-                    }
-                    
-                    Button(action: {
-                        resetAction()
-                        viewModel.restartLevel()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.counterclockwise")
-                            Text("Заново")
-                        }
-                        .font(.headline)
-                        .padding()
-                        .frame(width: 130)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.orange)
-                        )
-                        .foregroundColor(.white)
-                    }
-                }
-            }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(UIColor.systemGray6))
-                    .shadow(radius: 10)
-            )
-            .padding(.horizontal, 32)
-        }
-    }
-}
-
-// Представление подтверждения возврата в меню
-struct MenuConfirmView: View {
-    let dismiss: () -> Void
-    let goToMenu: () -> Void
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.7)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    dismiss()
-                }
-            
-            VStack(spacing: 24) {
-                Text("Выйти в меню?")
-                    .font(.title2)
+            // Диалог поражения
+            VStack(spacing: 20) {
+                Text("Game Over")
+                    .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.white)
                 
-                Text("Весь прогресс на уровне будет потерян")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                Text("Корабли столкнулись!")
+                    .font(.title2)
+                    .foregroundColor(.red)
                 
-                HStack(spacing: 20) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Text("Отмена")
-                            .font(.headline)
-                            .padding()
-                            .frame(width: 120)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.gray, lineWidth: 2)
-                            )
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Button(action: {
-                        goToMenu()
-                    }) {
-                        Text("Выйти")
-                            .font(.headline)
-                            .padding()
-                            .frame(width: 120)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.red)
-                            )
-                            .foregroundColor(.white)
-                    }
+                // Кнопка перезапуска
+                Button(action: {
+                    levelViewModel.restartLevel()
+                    gameViewModel.restartLevel()
+                }) {
+                    Text("Попробовать снова")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 200, height: 50)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                }
+                
+                // Кнопка возврата в меню
+                Button(action: {
+                    gameViewModel.returnToMainMenu()
+                }) {
+                    Text("В меню")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 200, height: 50)
+                        .background(Color.gray)
+                        .cornerRadius(10)
                 }
             }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(UIColor.systemBackground))
-                    .shadow(radius: 10)
-            )
-            .padding(.horizontal, 40)
         }
+    }
+    
+    // MARK: - SpriteKit
+    
+    private func getGameScene(size: CGSize) -> SKScene {
+        if let existingScene = scene {
+            return existingScene
+        }
+        
+        // Создаем новую сцену
+        let newScene = GameScene()
+        newScene.size = size
+        newScene.scaleMode = .aspectFill
+        newScene.levelViewModel = levelViewModel
+        
+        // Сохраняем сцену
+        scene = newScene
+        
+        return newScene
+    }
+    
+    // MARK: - Настройка ViewModel
+    
+    private func setupLevelViewModel() {
+        // Установка делегата - теперь без приведения к any, так как протокол не ограничен классами
+        levelViewModel.delegate = self
+    }
+}
+
+// MARK: - Расширение для делегата LevelViewModel
+
+extension GameView: LevelViewModelDelegate {
+    func levelCompleted() {
+        gameViewModel.completeLevel()
+    }
+    
+    func levelFailed() {
+        gameViewModel.gameover()
+    }
+    
+    func levelRestarted() {
+        // Пересоздаем сцену для перезапуска
+        scene = nil
     }
 }
 
 #Preview {
-    GameView(viewModel: GameViewModel())
+    GameView(gameViewModel: GameViewModel())
 }

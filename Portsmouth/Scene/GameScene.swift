@@ -1,571 +1,341 @@
 import SpriteKit
 import GameplayKit
-import UIKit
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    // MARK: - Константы для физики
     
-    // MARK: - Properties
+    private struct PhysicsCategory {
+        static let none: UInt32 = 0
+        static let ship: UInt32 = 0x1 << 0
+        static let boundary: UInt32 = 0x1 << 1
+        static let obstacle: UInt32 = 0x1 << 2
+        static let all: UInt32 = UInt32.max
+    }
     
-    // Количество пирсов и водных путей
-    let dockRows = 2
-    let dockColumns = 2
+    // MARK: - Свойства
     
-    // Ссылка на ViewModel
-    weak var viewModel: GameViewModel?
+    /// ViewModel для текущего уровня
+    var levelViewModel: LevelViewModel!
     
-    // Размеры экрана и элементов
-    var screenSize: CGSize = .zero
-    var dockSize: CGSize = .zero
-    var pathWidth: CGFloat = 0
-    var intersectionSize: CGFloat = 0
+    /// Размер ячейки сетки
+    private var cellSize: CGFloat = 40
     
-    // Корабли на сцене
-    var shipNodes: [UUID: SKSpriteNode] = [:]
+    /// Словарь корабельных узлов, индексированных по их ID
+    private var shipNodes = [UUID: ShipNode]()
     
-    // Флаг, показывающий, что игра запущена
-    var isGameRunning = false
+    /// Словарь перекрестков, индексированных по их позиции
+    private var intersectionPositions = Set<GridPosition>()
     
-    // Количество кораблей, успешно достигших выхода
-    var shipsReachedExit = 0
+    /// Набор позиций препятствий
+    private var obstaclePositions = Set<GridPosition>()
     
-    // MARK: - Scene Lifecycle
+    // MARK: - Жизненный цикл
     
     override func didMove(to view: SKView) {
-        super.didMove(to: view)
+        backgroundColor = SKColor.blue.withAlphaComponent(0.5) // Светло-голубой цвет для воды
         
-        // Сохраняем размеры экрана
-        screenSize = size
+        // Настройка физики
+        physicsWorld.gravity = .zero
+        physicsWorld.contactDelegate = self
         
-        // Расчитываем размеры элементов
-        calculateSizes()
+        // Загрузка уровня
+        setupLevel()
         
-        // Настраиваем сцену
-        setupScene()
-        
-        // Запускаем игру
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.isGameRunning = true
-        }
+        // Добавляем границы сцены для определения выхода кораблей
+        setupScreenBoundaries()
     }
     
-    // MARK: - Setup
-    
-    private func calculateSizes() {
-        // Размеры пирса - как на скриншоте, примерно 40% ширины и 30% высоты экрана
-        let dockWidth = screenSize.width * 0.4
-        let dockHeight = screenSize.height * 0.3
-        dockSize = CGSize(width: dockWidth, height: dockHeight)
+    private func setupScreenBoundaries() {
+        let borderBody = SKPhysicsBody(edgeLoopFrom: self.frame)
+        borderBody.categoryBitMask = PhysicsCategory.boundary
+        borderBody.contactTestBitMask = PhysicsCategory.ship
+        borderBody.collisionBitMask = PhysicsCategory.none
         
-        // Ширина водного пути - примерно 10% ширины экрана
-        pathWidth = screenSize.width * 0.1
-        
-        // Размер перекрестка
-        intersectionSize = pathWidth * 0.7
+        self.physicsBody = borderBody
     }
     
-    private func setupScene() {
-        setupWaterBackground()
-        setupDocks()
-        setupShips()
-    }
+    // MARK: - Настройка уровня
     
-    private func setupWaterBackground() {
-        // Создаем голубой фон с эффектом волн
-        backgroundColor = SKColor(red: 0.2, green: 0.6, blue: 0.9, alpha: 1.0)
+    private func setupLevel() {
+        guard let level = levelViewModel?.level else { return }
         
-        // Добавляем текстуру воды (для визуального эффекта)
-        for i in 0..<3 {
-            for j in 0..<4 {
-                let waterPattern = SKSpriteNode(color: .clear, size: CGSize(width: size.width / 3, height: size.height / 4))
-                waterPattern.position = CGPoint(
-                    x: CGFloat(i) * size.width / 3 + size.width / 6,
-                    y: CGFloat(j) * size.height / 4 + size.height / 8
-                )
-                waterPattern.zPosition = -1
-                
-                // Создаем эффект волн
-                let path = UIBezierPath()
-                for x in stride(from: 0, to: Int(waterPattern.size.width), by: 20) {
-                    for y in stride(from: 0, to: Int(waterPattern.size.height), by: 20) {
-                        let startX = CGFloat(x) - waterPattern.size.width / 2
-                        let startY = CGFloat(y) - waterPattern.size.height / 2
-                        
-                        path.move(to: CGPoint(x: startX, y: startY))
-                        path.addCurve(
-                            to: CGPoint(x: startX + 20, y: startY + 5),
-                            controlPoint1: CGPoint(x: startX + 5, y: startY - 5),
-                            controlPoint2: CGPoint(x: startX + 15, y: startY + 10)
-                        )
-                    }
-                }
-                
-                let waveShape = SKShapeNode(path: path.cgPath)
-                waveShape.strokeColor = SKColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.3)
-                waveShape.lineWidth = 2
-                waterPattern.addChild(waveShape)
-                
-                addChild(waterPattern)
-            }
-        }
-    }
-    
-    private func setupDocks() {
-        let horizontalPadding = (screenSize.width - (dockSize.width * CGFloat(dockColumns) + pathWidth)) / 2
-        let verticalPadding = (screenSize.height - (dockSize.height * CGFloat(dockRows) + pathWidth)) / 2
+        // Получаем настройки сетки
+        cellSize = level.gridSettings.cellSize
         
-        // Создаем 4 пирса в углах экрана
-        for row in 0..<dockRows {
-            for col in 0..<dockColumns {
-                // Вычисляем позицию для дока
-                let xPos: CGFloat
-                if col == 0 {
-                    xPos = horizontalPadding + dockSize.width / 2
-                } else {
-                    xPos = screenSize.width - horizontalPadding - dockSize.width / 2
-                }
-                
-                let yPos: CGFloat
-                if row == 0 {
-                    yPos = verticalPadding + dockSize.height / 2
-                } else {
-                    yPos = screenSize.height - verticalPadding - dockSize.height / 2
-                }
-                
-                // Создаем пирс
-                createDock(at: CGPoint(x: xPos, y: yPos))
-            }
-        }
-    }
-    
-
-    
-    private func createDock(at position: CGPoint) {
-        let dock = SKShapeNode(rectOf: dockSize, cornerRadius: 10)
-        dock.fillColor = .gray
-        dock.strokeColor = .lightGray
-        dock.lineWidth = 4
-        dock.position = position
-        dock.zPosition = 5
-        dock.name = "dock"
-        
-        addChild(dock)
-    }
-    
-    private func setupShips() {
-        // Очищаем существующие корабли
-        shipNodes.values.forEach { $0.removeFromParent() }
+        // Очищаем предыдущие ноды, если они есть
+        removeAllChildren()
         shipNodes.removeAll()
+        intersectionPositions.removeAll()
+        obstaclePositions.removeAll()
         
-        // Координаты центров водных путей
-        let horizontalPathY = screenSize.height / 2
-        let verticalPathX = screenSize.width / 2
+        // Устанавливаем размер сцены
+        let gridSize = levelViewModel.getGridSizeInPoints()
+        size = gridSize
         
-        // Позиции кораблей
-        let topShipPosition = CGPoint(x: verticalPathX, y: horizontalPathY - dockSize.height/2 - pathWidth)
-        let rightShipPosition = CGPoint(x: verticalPathX + dockSize.width/2 + pathWidth, y: horizontalPathY)
-        let bottomShipPosition = CGPoint(x: verticalPathX, y: horizontalPathY + dockSize.height/2 + pathWidth)
-        let leftShipPosition = CGPoint(x: verticalPathX - dockSize.width/2 - pathWidth, y: horizontalPathY)
+        // Отрисовка фона (сетка)
+        setupGrid(width: level.gridSettings.width, height: level.gridSettings.height)
         
-        // Верхний корабль - смотрит вниз (к центру), поворот налево
-        createShip(at: topShipPosition, rotation: .pi/2, turnPattern: .left, color: .systemBlue)
+        // Размещение препятствий
+        setupObstacles(level.obstacles)
         
-        // Правый корабль - смотрит ВПРАВО (от центра), движется прямо
-        createShip(at: rightShipPosition, rotation: 0, turnPattern: .straight, color: .systemGreen)
+        // Размещение перекрестков
+        setupIntersections(level.intersections)
         
-        // Нижний корабль - смотрит вверх (к центру), поворот направо
-        createShip(at: bottomShipPosition, rotation: -.pi/2, turnPattern: .right, color: .systemRed)
-        
-        // Левый корабль - смотрит вправо (к центру), поворот направо
-        createShip(at: leftShipPosition, rotation: 0, turnPattern: .right, color: .systemOrange)
+        // Размещение кораблей
+        setupShips(level.ships)
     }
-
-    private func createShip(
-        at position: CGPoint,
-        rotation: CGFloat,
-        turnPattern: TurnDirection,
-        color: UIColor
-    ) {
-        // 1. Создаём контейнерный узел
-        let shipNode = SKSpriteNode(
-            color: .clear,
-            size: CGSize(width: pathWidth * 0.8, height: pathWidth * 1.4)
-        )
-        shipNode.position = position
-        shipNode.zRotation = rotation
-        shipNode.zPosition = 10
-        shipNode.name = "ship"
-
-        // 2. Строим треугольник: нос → вправо
-        let shipShape = SKShapeNode()
-        let halfW = shipNode.size.width  / 2
-        let halfH = shipNode.size.height / 2
-        let shipPath = UIBezierPath()
-        shipPath.move(to: CGPoint(x:  halfW, y:  0))      // нос
-        shipPath.addLine(to: CGPoint(x: -halfW, y:  halfH)) // правая задняя точка
-        shipPath.addLine(to: CGPoint(x: -halfW, y: -halfH)) // левая задняя точка
-        shipPath.close()
-        shipShape.path = shipPath.cgPath
-        shipShape.fillColor = color
-        shipShape.strokeColor = .white
-        shipShape.lineWidth = 2
-        shipNode.addChild(shipShape)
-
-        // 3. Добавляем букву паттерна поворота
-        let label = SKLabelNode(fontNamed: "Arial-Bold")
-        switch turnPattern {
-        case .left:
-            label.text = "L"
-        case .right:
-            label.text = "R"
-        case .straight:
-            label.text = "S"
-        case .reverse:
-            label.text = "U"
+    
+    private func setupGrid(width: Int, height: Int) {
+        // Отрисовка сетки для отладки
+        let gridNode = SKNode()
+        
+        for x in 0...width {
+            let xPos = CGFloat(x) * cellSize
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: xPos, y: 0))
+            path.addLine(to: CGPoint(x: xPos, y: CGFloat(height) * cellSize))
+            
+            let line = SKShapeNode(path: path)
+            line.strokeColor = .gray
+            line.lineWidth = 0.5
+            line.alpha = 0.3
+            gridNode.addChild(line)
         }
-        label.fontSize = 24
-        label.fontColor = .white
-        label.position = .zero
-        label.zPosition = 11
-        shipNode.addChild(label)
-
-        // 4. Сохраняем данные и добавляем интерактивность
-        let shipId = UUID()
-        shipNode.userData = NSMutableDictionary(dictionary: [
-            "id": shipId.uuidString,
-            "turnPattern": turnPattern.rawValue,
-            "isMoving": false,
-            "intersectionsPassed": 0
-        ])
-        addChild(shipNode)
-        shipNodes[shipId] = shipNode
-
-        let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.5),
-            SKAction.scale(to: 1.0, duration: 0.5)
-        ])
-        shipNode.run(.repeatForever(pulse))
+        
+        for y in 0...height {
+            let yPos = CGFloat(y) * cellSize
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 0, y: yPos))
+            path.addLine(to: CGPoint(x: CGFloat(width) * cellSize, y: yPos))
+            
+            let line = SKShapeNode(path: path)
+            line.strokeColor = .gray
+            line.lineWidth = 0.5
+            line.alpha = 0.3
+            gridNode.addChild(line)
+        }
+        
+        addChild(gridNode)
     }
     
-    // MARK: - Touch Handling
+    private func setupObstacles(_ obstacles: [ObstacleModel]) {
+        for obstacle in obstacles {
+            // Сохраняем позицию препятствия
+            obstaclePositions.insert(obstacle.gridPosition)
+            
+            // Создаем визуальное представление препятствия
+            let position = levelViewModel.gridPositionToScenePosition(obstacle.gridPosition)
+            let obstacleNode = SKSpriteNode(color: .brown, size: CGSize(width: cellSize, height: cellSize))
+            obstacleNode.position = position
+            
+            // Настройка физического тела
+            obstacleNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: cellSize, height: cellSize))
+            obstacleNode.physicsBody?.isDynamic = false
+            obstacleNode.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
+            obstacleNode.physicsBody?.contactTestBitMask = PhysicsCategory.none
+            obstacleNode.physicsBody?.collisionBitMask = PhysicsCategory.none
+            
+            addChild(obstacleNode)
+        }
+    }
     
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        
-        let location = touch.location(in: self)
-        let nodes = nodes(at: location)
-        
-        for node in nodes {
-            // Обработка нажатия на корабль
-            if isGameRunning && (node.name == "ship" || node.parent?.name == "ship") {
-                let shipNode = node.name == "ship" ? node as? SKSpriteNode : node.parent as? SKSpriteNode
-                
-                if let shipNode = shipNode,
-                   let userData = shipNode.userData as? NSMutableDictionary,
-                   let isMovingValue = userData["isMoving"] as? Bool,
-                   !isMovingValue {
-                    startShipMovement(shipNode)
-                    return
-                }
+    private func setupIntersections(_ intersections: [IntersectionModel]) {
+        for intersection in intersections {
+            // Сохраняем позицию перекрестка
+            intersectionPositions.insert(intersection.gridPosition)
+            
+            // Создаем визуальное представление перекрестка (опционально)
+            let position = levelViewModel.gridPositionToScenePosition(intersection.gridPosition)
+            let intersectionNode = SKShapeNode(circleOfRadius: cellSize / 4)
+            intersectionNode.position = position
+            intersectionNode.fillColor = .yellow
+            intersectionNode.alpha = 0.5 // Полупрозрачное для отладки
+            
+            addChild(intersectionNode)
+        }
+    }
+    
+    private func setupShips(_ ships: [ShipModel]) {
+        for ship in ships {
+            // Создаем корабль
+            let position = levelViewModel.gridPositionToScenePosition(ship.initialGridPosition)
+            let shipNode = ShipNode(
+                size: CGSize(width: cellSize * 0.8, height: cellSize * 0.8),
+                direction: ship.direction,
+                turnPattern: ship.turnPattern,
+                id: ship.id
+            )
+            shipNode.position = position
+            
+            // Настраиваем тело для физики
+            shipNode.setupPhysicsBody(radius: cellSize * 0.4, categoryBitMask: PhysicsCategory.ship)
+            
+            // Добавляем обработчик нажатия
+            shipNode.setupTapHandler { [weak self] in
+                self?.startShipMovement(shipNode)
             }
+            
+            // Добавляем в словарь и на сцену
+            shipNodes[ship.id] = shipNode
+            addChild(shipNode)
         }
     }
     
-    private func startShipMovement(_ shipNode: SKSpriteNode) {
-        // Помечаем корабль как движущийся
-        if let userData = shipNode.userData as? NSMutableDictionary {
-            userData["isMoving"] = true
+    // MARK: - Управление кораблями
+    
+    private func startShipMovement(_ shipNode: ShipNode) {
+        // Проверка, что корабль ещё не движется
+        if shipNode.isMoving {
+            return
         }
-        
-        // Останавливаем анимацию пульсации
-        shipNode.removeAllActions()
-        
-        // Определяем направление движения по ротации
-        let direction = getDirectionFromRotation(shipNode.zRotation)
-        
-        // Начинаем движение
-        moveShip(shipNode, direction: direction)
-    }
-    
-    private func getDirectionFromRotation(_ rotation: CGFloat) -> CGVector {
-        // Определяем вектор движения по углу поворота
-        let normalizedRotation = normalizeAngle(rotation)
-        
-        // Корабль всегда движется вперед носом
-        return CGVector(
-            dx: cos(normalizedRotation),
-            dy: sin(normalizedRotation)
-        )
-    }
-    
-    private func normalizeAngle(_ angle: CGFloat) -> CGFloat {
-        // Нормализуем угол до диапазона [0, 2π)
-        return (angle.truncatingRemainder(dividingBy: 2 * .pi) + 2 * .pi).truncatingRemainder(dividingBy: 2 * .pi)
-    }
-    
-    private func moveShip(_ shipNode: SKSpriteNode, direction: CGVector) {
-        // Скорость движения корабля
-        let speed: CGFloat = 100
-        
-        // Применяем физику для прямолинейного движения
-        let dx = direction.dx * speed
-        let dy = direction.dy * speed
-        
-        // Создаем действие для движения вперед
-        let moveAction = SKAction.moveBy(x: dx, y: dy, duration: 1.0)
-        let repeatMove = SKAction.repeatForever(moveAction)
         
         // Запускаем движение
-        shipNode.run(SKAction.sequence([
-            // Небольшая задержка для визуального эффекта
-            SKAction.wait(forDuration: 0.1),
-            // Бесконечное движение вперед
-            repeatMove
-        ]), withKey: "movement")
+        shipNode.isMoving = true
+        moveShip(shipNode)
         
-        // Запускаем проверку на пересечение перекрестка и границы
-        let checkAction = SKAction.run { [weak self] in
-            self?.checkShipPosition(shipNode)
-        }
-        let wait = SKAction.wait(forDuration: 0.1)
-        let checkSequence = SKAction.sequence([wait, checkAction])
-        let repeatCheck = SKAction.repeatForever(checkSequence)
-        
-        shipNode.run(repeatCheck, withKey: "positionCheck")
+        // Уведомляем ViewModel
+        levelViewModel.startShipMovement(shipId: shipNode.id)
     }
     
-    private func checkShipPosition(_ shipNode: SKSpriteNode) {
-        // Проверка выхода за границы экрана
-        if shipNode.position.x < -shipNode.size.width ||
-           shipNode.position.x > screenSize.width + shipNode.size.width ||
-           shipNode.position.y < -shipNode.size.height ||
-           shipNode.position.y > screenSize.height + shipNode.size.height {
-            // Корабль успешно вышел
-            shipExitedGrid(shipNode)
+    private func moveShip(_ shipNode: ShipNode) {
+        // Получаем вектор движения из направления
+        let direction = shipNode.direction
+        let moveVector = direction.vector
+        
+        // Вычисляем следующую позицию
+        let nextX = shipNode.position.x + moveVector.dx * cellSize
+        let nextY = shipNode.position.y + moveVector.dy * cellSize
+        let nextPosition = CGPoint(x: nextX, y: nextY)
+        
+        // Создаем действие движения
+        let moveAction = SKAction.move(to: nextPosition, duration: 0.5)
+        
+        // Выполняем действие и проверяем статус после завершения
+        shipNode.run(moveAction) { [weak self] in
+            guard let self = self else { return }
+            
+            // Проверяем, находится ли корабль на перекрестке
+            let gridPosition = self.scenePositionToGridPosition(shipNode.position)
+            if self.intersectionPositions.contains(gridPosition) {
+                self.handleShipAtIntersection(shipNode)
+            }
+            
+            // Продолжаем движение, если корабль все еще на сцене
+            if shipNode.parent != nil {
+                self.moveShip(shipNode)
+            }
+        }
+    }
+    
+    private func handleShipAtIntersection(_ shipNode: ShipNode) {
+        // Получаем новое направление в зависимости от паттерна поворота
+        let newDirection = shipNode.direction.direction(after: shipNode.turnPattern)
+        
+        // Сохраняем текущее направление для сравнения
+        let oldDirection = shipNode.direction
+        
+        // Устанавливаем новое направление
+        shipNode.direction = newDirection
+        
+        // Если направление изменилось, выполняем анимацию поворота
+        if oldDirection != newDirection {
+            performTurnAnimation(shipNode, from: oldDirection, to: newDirection)
+        }
+    }
+    
+    private func performTurnAnimation(_ shipNode: ShipNode, from oldDirection: ShipDirection, to newDirection: ShipDirection) {
+        // Определяем угол поворота
+        let newAngle = newDirection.angle
+        
+        // Создаем действие поворота
+        let rotateAction = SKAction.rotate(toAngle: newAngle, duration: 0.2, shortestUnitArc: true)
+        
+        // Выполняем анимацию
+        shipNode.run(rotateAction)
+    }
+    
+    private func shipExitedScreen(_ shipNode: ShipNode) {
+        // Удаляем корабль со сцены
+        shipNode.removeFromParent()
+        shipNodes.removeValue(forKey: shipNode.id)
+        
+        // Уведомляем ViewModel о завершении пути корабля
+        levelViewModel.shipCompletedPath()
+    }
+    
+    // MARK: - Физика и столкновения
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        // Получаем узлы, участвующие в контакте
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
+        
+        // Проверяем столкновение кораблей между собой
+        if bodyA.categoryBitMask == PhysicsCategory.ship && bodyB.categoryBitMask == PhysicsCategory.ship {
+            // Столкновение кораблей - проигрыш
+            handleShipCollision()
             return
         }
         
-        // Проверка достижения перекрестка (центра экрана)
-        let intersectionPoint = CGPoint(x: screenSize.width / 2, y: screenSize.height / 2)
-        let distance = hypot(
-            shipNode.position.x - intersectionPoint.x,
-            shipNode.position.y - intersectionPoint.y
-        )
-        
-        // Если корабль достиг перекрестка (с некоторой погрешностью)
-        if distance < intersectionSize / 2 {
-            // Проверяем, проходил ли уже корабль перекресток
-            if let userData = shipNode.userData as? NSMutableDictionary,
-               let intersectionsPassed = userData["intersectionsPassed"] as? Int,
-               intersectionsPassed == 0 {
-                // Отмечаем, что корабль прошел перекресток
-                userData["intersectionsPassed"] = 1
-                
-                // Применяем поворот на перекрестке
-                handleIntersection(shipNode)
-            }
-        }
-        
-        // Проверка столкновения с другими кораблями
-        for (_, otherShip) in shipNodes {
-            // пропускаем себя
-            guard otherShip != shipNode else { continue }
+        // Проверяем выход корабля за пределы экрана
+        if (bodyA.categoryBitMask == PhysicsCategory.ship && bodyB.categoryBitMask == PhysicsCategory.boundary) ||
+           (bodyA.categoryBitMask == PhysicsCategory.boundary && bodyB.categoryBitMask == PhysicsCategory.ship) {
             
-            // вычисляем расстояние между центрами
-            let dx = shipNode.position.x - otherShip.position.x
-            let dy = shipNode.position.y - otherShip.position.y
-            let distance = hypot(dx, dy)
+            let shipBody = (bodyA.categoryBitMask == PhysicsCategory.ship) ? bodyA : bodyB
             
-            // порог столкновения — половина суммы ширин кораблей
-            let collisionThreshold = (shipNode.size.width + otherShip.size.width) * 0.4
-            
-            if distance < collisionThreshold {
-                handleCollision(shipNode, otherShipNode: otherShip)
-                return
+            // Находим соответствующий корабль
+            if let shipNode = shipBody.node as? ShipNode {
+                shipExitedScreen(shipNode)
             }
         }
     }
     
-    private func handleIntersection(_ shipNode: SKSpriteNode) {
-        // Получаем паттерн поворота
-        guard let userData = shipNode.userData as? NSMutableDictionary,
-              let turnPatternValue = userData["turnPattern"] as? String,
-              let turnPattern = TurnDirection(rawValue: turnPatternValue) else {
-            return
-        }
-        
-        // Останавливаем движение
-        shipNode.removeAction(forKey: "movement")
-        
-        // Определяем угол поворота в зависимости от паттерна
-        var rotationDelta: CGFloat = 0
-        
-        switch turnPattern {
-        case .left:
-            rotationDelta = .pi/2 // поворот налево на 90°
-        case .right:
-            rotationDelta = -.pi/2 // поворот направо на 90°
-        case .reverse:
-            rotationDelta = .pi // разворот на 180°
-        case .straight:
-            rotationDelta = 0 // продолжение движения прямо
-        }
-        
-        // Применяем поворот, если нужен
-        if rotationDelta != 0 {
-            let newRotation = shipNode.zRotation + rotationDelta
-            let rotateAction = SKAction.rotate(toAngle: newRotation, duration: 0.3)
-            
-            shipNode.run(rotateAction) { [weak self] in
-                // После поворота продолжаем движение в новом направлении
-                if let self = self {
-                    let newDirection = self.getDirectionFromRotation(shipNode.zRotation)
-                    self.moveShip(shipNode, direction: newDirection)
-                }
-            }
-        } else {
-            // Если нет поворота, просто продолжаем движение
-            let direction = getDirectionFromRotation(shipNode.zRotation)
-            moveShip(shipNode, direction: direction)
-        }
-    }
-    
-    private func handleCollision(_ shipNode: SKSpriteNode, otherShipNode: SKSpriteNode) {
-        // Проверяем, не находимся ли мы уже в состоянии столкновения
-        guard isGameRunning else { return }
-        
-        // Останавливаем игру
-        isGameRunning = false
-        
-        // Останавливаем движение всех кораблей
-        for (_, ship) in shipNodes {
-            ship.removeAllActions()
+    private func handleShipCollision() {
+        // Останавливаем все корабли
+        for (_, shipNode) in shipNodes {
+            shipNode.removeAllActions()
         }
         
         // Анимация столкновения
-        let explosion = SKEmitterNode(fileNamed: "Explosion") ?? createExplosionEmitter()
-        explosion.position = CGPoint(
-            x: (shipNode.position.x + otherShipNode.position.x) / 2,
-            y: (shipNode.position.y + otherShipNode.position.y) / 2
-        )
-        explosion.zPosition = 20
-        addChild(explosion)
+        performCollisionAnimation()
         
-        // Визуальный эффект столкновения
-        let redColorAction = SKAction.colorize(with: .red, colorBlendFactor: 0.8, duration: 0.2)
-        shipNode.run(redColorAction)
-        otherShipNode.run(redColorAction)
-        
-        // Уведомляем ViewModel о столкновении после небольшой задержки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.viewModel?.shipCollision()
-        }
+        // Уведомляем ViewModel о столкновении
+        levelViewModel.shipCollision()
     }
     
-    private func createExplosionEmitter() -> SKEmitterNode {
-        // Создаем эмиттер вручную, если файл не найден
-        let explosion = SKEmitterNode()
-        explosion.particleTexture = SKTexture(imageNamed: "spark")
-        explosion.particleBirthRate = 500
-        explosion.numParticlesToEmit = 50
-        explosion.particleLifetime = 2.0
-        explosion.emissionAngle = 0
-        explosion.emissionAngleRange = 2 * .pi
-        explosion.particleSpeed = 50
-        explosion.particleSpeedRange = 50
-        explosion.particleAlpha = 1.0
-        explosion.particleAlphaRange = 0.0
-        explosion.particleAlphaSpeed = -0.5
-        explosion.particleScale = 0.5
-        explosion.particleScaleRange = 0.25
-        explosion.particleScaleSpeed = -0.25
-        explosion.particleColor = .orange
-        explosion.particleColorBlendFactor = 1.0
-        explosion.particleColorBlendFactorRange = 0.3
-        explosion.particleColorBlendFactorSpeed = -0.5
-        explosion.particleColorSequence = SKKeyframeSequence(keyframeValues: [
-            UIColor.red,
-            UIColor.orange,
-            UIColor.yellow,
-            UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 0.0)
-        ], times: [0.0, 0.1, 0.3, 1.0])
-        return explosion
+    private func performCollisionAnimation() {
+        // Анимация взрыва или другой эффект
+        let explosionNode = SKSpriteNode(color: .red, size: CGSize(width: cellSize * 2, height: cellSize * 2))
+        explosionNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        explosionNode.zPosition = 10
+        
+        // Анимация пульсации
+        let scaleUpAction = SKAction.scale(to: 1.5, duration: 0.2)
+        let fadeOutAction = SKAction.fadeOut(withDuration: 0.3)
+        let sequence = SKAction.sequence([scaleUpAction, fadeOutAction, SKAction.removeFromParent()])
+        
+        addChild(explosionNode)
+        explosionNode.run(sequence)
     }
     
-    private func shipExitedGrid(_ shipNode: SKSpriteNode) {
-        // Останавливаем все действия
-        shipNode.removeAllActions()
-        
-        // Удаляем корабль из сцены
-        if let userData = shipNode.userData as? NSMutableDictionary,
-           let shipId = userData["id"] as? String,
-           let uuid = UUID(uuidString: shipId) {
-            shipNodes.removeValue(forKey: uuid)
-        }
-        shipNode.removeFromParent()
-        
-        // Увеличиваем счетчик
-        shipsReachedExit += 1
-        
-        // Уведомляем ViewModel об успешном выходе
-        viewModel?.shipReachedExit()
-        
-        // Проверяем, все ли корабли вышли
-        if shipNodes.isEmpty {
-            levelCompleted()
-        }
+    // MARK: - Вспомогательные методы
+    
+    /// Проверка, находится ли позиция за пределами экрана
+    private func isOutOfBounds(position: CGPoint) -> Bool {
+        return position.x < 0 || position.y < 0 ||
+               position.x > size.width || position.y > size.height
     }
     
-    private func levelCompleted() {
-        // Останавливаем игру
-        isGameRunning = false
-        
-        // Уведомляем ViewModel о завершении уровня
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.viewModel?.completeLevel()
-        }
+    /// Преобразование позиции сцены в координаты сетки
+    private func scenePositionToGridPosition(_ position: CGPoint) -> GridPosition {
+        let x = Int(position.x / cellSize)
+        let y = Int(position.y / cellSize)
+        return GridPosition(x: x, y: y)
     }
     
-    // MARK: - Public Methods
+    // MARK: - Обработка касаний (для перезапуска уровня)
     
-    func resetScene() {
-        // Удаляем все дочерние узлы
-        removeAllChildren()
-        
-        // Сбрасываем состояние
-        isGameRunning = false
-        shipsReachedExit = 0
-        shipNodes.removeAll()
-        
-        // Настраиваем сцену заново
-        setupScene()
-        
-        // Запускаем игру после короткой задержки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.isGameRunning = true
-        }
-    }
-}
-
-// Расширение для TurnDirection
-extension TurnDirection: RawRepresentable {
-    public typealias RawValue = String
-    
-    public init?(rawValue: String) {
-        switch rawValue {
-        case "left": self = .left
-        case "right": self = .right
-        case "straight": self = .straight
-        case "reverse": self = .reverse
-        default: return nil
-        }
-    }
-    
-    public var rawValue: String {
-        switch self {
-        case .left: return "left"
-        case .right: return "right"
-        case .straight: return "straight"
-        case .reverse: return "reverse"
-        }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Дополнительная логика обработки касаний может быть добавлена здесь
     }
 }
