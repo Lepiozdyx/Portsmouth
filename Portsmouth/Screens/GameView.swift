@@ -257,7 +257,7 @@ struct GameView: View {
         // Создаем новую сцену
         let newScene = GameScene()
         newScene.size = size
-        newScene.scaleMode = .aspectFill
+        newScene.scaleMode = .aspectFit
         newScene.levelViewModel = levelViewModel
         
         // Сохраняем сцену

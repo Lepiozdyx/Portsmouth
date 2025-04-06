@@ -40,29 +40,35 @@ class LevelManager {
         
         // 1. Создаем корабли в соответствии со схемой
         let ships: [ShipModel] = [
-            // Корабль в центре верхней части (направлен вниз)
+            // Корабль сверху
             ShipModel(
-                initialGridPosition: GridPosition(x: 5, y: 5),
+                initialGridPosition: GridPosition(x: 4, y: 9),
                 direction: .south,
                 turnPattern: .straight
             ),
-            // Корабль слева (направлен вправо)
+            // Корабль слева
             ShipModel(
-                initialGridPosition: GridPosition(x: 2, y: 9),
+                initialGridPosition: GridPosition(x: 2, y: 7),
                 direction: .east,
-                turnPattern: .left
+                turnPattern: .right
             ),
-            // Корабль справа (направлен вправо)
+            // Корабль справа
             ShipModel(
-                initialGridPosition: GridPosition(x: 7, y: 9),
+                initialGridPosition: GridPosition(x: 6, y: 7),
                 direction: .east,
+                turnPattern: .straight
+            ),
+            // Корабль снизу
+            ShipModel(
+                initialGridPosition: GridPosition(x: 4, y: 5),
+                direction: .north,
                 turnPattern: .right
             )
         ]
         
         // 2. Создаем перекрестки в соответствии со схемой
         let intersections: [IntersectionModel] = [
-            IntersectionModel(gridPosition: GridPosition(x: 5, y: 9))
+            IntersectionModel(gridPosition: GridPosition(x: 4, y: 7))
         ]
         
         // 3. Создаем препятствия (порты/доки) в соответствии со схемой
@@ -70,28 +76,28 @@ class LevelManager {
         
         // Верхний левый блок препятствий (3x4)
         for x in 1...3 {
-            for y in 3...6 {
+            for y in 8...11 {
                 obstacles.append(ObstacleModel(gridPosition: GridPosition(x: x, y: y)))
             }
         }
         
         // Верхний правый блок препятствий (3x4)
-        for x in 6...8 {
-            for y in 3...6 {
+        for x in 5...7 {
+            for y in 8...11 {
                 obstacles.append(ObstacleModel(gridPosition: GridPosition(x: x, y: y)))
             }
         }
         
         // Нижний левый блок препятствий (3x4)
         for x in 1...3 {
-            for y in 10...13 {
+            for y in 3...6 {
                 obstacles.append(ObstacleModel(gridPosition: GridPosition(x: x, y: y)))
             }
         }
         
         // Нижний правый блок препятствий (3x4)
-        for x in 6...8 {
-            for y in 10...13 {
+        for x in 5...7 {
+            for y in 3...6 {
                 obstacles.append(ObstacleModel(gridPosition: GridPosition(x: x, y: y)))
             }
         }

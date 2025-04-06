@@ -31,10 +31,12 @@ class ShipNode: SKNode {
         self.turnPattern = turnPattern
         
         // Создаем спрайт корабля (треугольник)
+        // Обратите внимание, что теперь вершина указывает вверх (0, size.height)
+        // вместо предыдущей реализации, где первая точка была (size.width/2, size.height)
         let trianglePath = UIBezierPath()
-        trianglePath.move(to: CGPoint(x: size.width/2, y: size.height))
+        trianglePath.move(to: CGPoint(x: 0, y: size.height))
         trianglePath.addLine(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: size.width, y: 0))
+        trianglePath.addLine(to: CGPoint(x: size.width, y: size.height/2))
         trianglePath.close()
         
         let shapeNode = SKShapeNode(path: trianglePath.cgPath)
@@ -51,7 +53,7 @@ class ShipNode: SKNode {
         patternIndicator.text = turnPattern.indicatorText
         patternIndicator.fontSize = size.width * 0.4
         patternIndicator.fontColor = .black
-        patternIndicator.position = CGPoint(x: 0, y: size.height * 0.1)
+        patternIndicator.position = CGPoint(x: 0, y: 0) // Центрируем индикатор
         patternIndicator.verticalAlignmentMode = .center
         patternIndicator.horizontalAlignmentMode = .center
         
