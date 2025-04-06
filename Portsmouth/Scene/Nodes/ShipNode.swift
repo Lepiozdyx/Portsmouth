@@ -9,7 +9,12 @@ class ShipNode: SKNode {
     let id: UUID
     
     /// Направление движения корабля
-    var direction: ShipDirection
+    var direction: ShipDirection {
+        didSet {
+            // При изменении направления обновляем ориентацию корабля
+            updateRotation()
+        }
+    }
     
     /// Паттерн поворота на перекрестках
     let turnPattern: TurnPattern
@@ -30,22 +35,9 @@ class ShipNode: SKNode {
         self.direction = direction
         self.turnPattern = turnPattern
         
-        // Создаем спрайт корабля (треугольник)
-        // Обратите внимание, что теперь вершина указывает вверх (0, size.height)
-        // вместо предыдущей реализации, где первая точка была (size.width/2, size.height)
-        let trianglePath = UIBezierPath()
-        trianglePath.move(to: CGPoint(x: 0, y: size.height))
-        trianglePath.addLine(to: CGPoint(x: 0, y: 0))
-        trianglePath.addLine(to: CGPoint(x: size.width, y: size.height/2))
-        trianglePath.close()
-        
-        let shapeNode = SKShapeNode(path: trianglePath.cgPath)
-        shapeNode.fillColor = .white
-        shapeNode.strokeColor = .black
-        shapeNode.lineWidth = 2.0
-        
-        let texture = SKView().texture(from: shapeNode)
-        shipSprite = SKSpriteNode(texture: texture)
+        // Создаем спрайт корабля с текстурой "ship"
+        let shipTexture = SKTexture(imageNamed: "ship")
+        shipSprite = SKSpriteNode(texture: shipTexture)
         shipSprite.size = size
         
         // Создаем индикатор паттерна поворота
@@ -63,8 +55,9 @@ class ShipNode: SKNode {
         addChild(shipSprite)
         addChild(patternIndicator)
         
-        // Устанавливаем начальный угол поворота
-        zRotation = direction.angle
+        // Поворачиваем узел в соответствии с исходным направлением
+        // Важно: делаем это здесь, после добавления дочерних узлов
+        updateRotation()
         
         // Запускаем анимацию пульсации для неактивного состояния
         startPulseAnimation()
@@ -72,6 +65,34 @@ class ShipNode: SKNode {
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - Обновление поворота
+    
+    /// Обновляет поворот корабля в соответствии с его направлением
+    func updateRotation() {
+        // ВАЖНО: Анимируем поворот только если корабль уже движется
+        let duration: TimeInterval = isMoving ? 0.2 : 0
+        
+        // Получаем угол в зависимости от направления
+        // SpriteKit: угол = 0 соответствует направлению вправо (ось X),
+        // поэтому нам нужно скорректировать углы относительно этого
+        let angle: CGFloat
+        switch direction {
+        case .north:
+            angle = -.pi / 2    // -90° (вверх)
+        case .south:
+            angle = .pi / 2     // 90° (вниз)
+        case .east:
+            angle = 0           // 0° (вправо)
+        case .west:
+            angle = .pi         // 180° (влево)
+        }
+        
+        // ВАЖНО: Применяем поворот ко всему узлу, а не только к спрайту!
+        // Это обеспечит правильную ориентацию как визуально, так и для физики
+        let action = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
+        run(action)
     }
     
     // MARK: - Настройка физического тела
@@ -117,7 +138,7 @@ class ShipNode: SKNode {
         let sequence = SKAction.sequence([scaleUp, scaleDown])
         let pulse = SKAction.repeatForever(sequence)
         
-        // Запускаем анимацию
+        // Запускаем анимацию пульсации только для спрайта
         shipSprite.run(pulse, withKey: "pulseAnimation")
     }
     
@@ -126,8 +147,6 @@ class ShipNode: SKNode {
         shipSprite.removeAction(forKey: "pulseAnimation")
         shipSprite.setScale(1.0)
     }
-    
-    // MARK: - Вспомогательные методы
 }
 
 // MARK: - Расширения

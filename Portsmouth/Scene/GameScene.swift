@@ -268,8 +268,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
         
-        // Запускаем движение
+        // Устанавливаем флаг движения
         shipNode.isMoving = true
+        
+        // Начинаем движение
         moveShip(shipNode)
         
         // Уведомляем ViewModel
@@ -310,15 +312,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Получаем новое направление в зависимости от паттерна поворота
         let newDirection = shipNode.direction.direction(after: shipNode.turnPattern)
         
-        // Сохраняем текущее направление для сравнения
-        let oldDirection = shipNode.direction
-        
-        // Устанавливаем новое направление
-        shipNode.direction = newDirection
-        
-        // Если направление изменилось, выполняем анимацию поворота
-        if oldDirection != newDirection {
-            performTurnAnimation(shipNode, from: oldDirection, to: newDirection)
+        // Если направление изменилось, выполняем поворот
+        if shipNode.direction != newDirection {
+            // Обновляем направление (это вызовет updateRotation через didSet)
+            shipNode.direction = newDirection
+            
+            // В этом месте не нужна дополнительная анимация поворота,
+            // т.к. обновление производится через didSet свойства direction
         }
     }
     
