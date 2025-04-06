@@ -12,7 +12,7 @@ class ShipNode: SKNode {
     var direction: ShipDirection {
         didSet {
             // При изменении направления обновляем ориентацию корабля
-            updateRotation()
+            applyCorrectRotation()
         }
     }
     
@@ -55,44 +55,49 @@ class ShipNode: SKNode {
         addChild(shipSprite)
         addChild(patternIndicator)
         
-        // Поворачиваем узел в соответствии с исходным направлением
-        // Важно: делаем это здесь, после добавления дочерних узлов
-        updateRotation()
-        
         // Запускаем анимацию пульсации для неактивного состояния
         startPulseAnimation()
+        
+        // ВАЖНО: Применяем начальное вращение только после инициализации
+        applyCorrectRotation(animated: false)
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // MARK: - Обновление поворота
+    // MARK: - Поворот корабля
     
-    /// Обновляет поворот корабля в соответствии с его направлением
-    func updateRotation() {
-        // ВАЖНО: Анимируем поворот только если корабль уже движется
-        let duration: TimeInterval = isMoving ? 0.2 : 0
+    /// Применяет правильный поворот в зависимости от направления
+    func applyCorrectRotation(animated: Bool = true) {
+        let duration: TimeInterval = isMoving && animated ? 0.2 : 0.0
         
-        // Получаем угол в зависимости от направления
-        // SpriteKit: угол = 0 соответствует направлению вправо (ось X),
-        // поэтому нам нужно скорректировать углы относительно этого
-        let angle: CGFloat
+        // Рассчитываем правильный угол поворота
+        // Исходная текстура направлена вверх (.north)
+        let angle = getAngleForDirection(direction)
+        
+        // Выполняем поворот
+        let rotateAction = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
+        shipSprite.run(rotateAction)
+    }
+    
+    /// Получает угол поворота для заданного направления
+    private func getAngleForDirection(_ direction: ShipDirection) -> CGFloat {
+        // Поскольку текстура изначально смотрит вверх (north),
+        // для других направлений нужно повернуть:
         switch direction {
-        case .north:
-            angle = -.pi / 2    // -90° (вверх)
-        case .south:
-            angle = .pi / 2     // 90° (вниз)
-        case .east:
-            angle = 0           // 0° (вправо)
-        case .west:
-            angle = .pi         // 180° (влево)
+        case .north: // Вверх (исходное положение)
+            return 0
+            
+        case .south: // Вниз (180 градусов)
+            return .pi
+            
+        case .east: // Вправо (90 градусов по часовой)
+            return .pi / 2
+            
+        case .west: // Влево (90 градусов против часовой)
+            return -.pi / 2
         }
-        
-        // ВАЖНО: Применяем поворот ко всему узлу, а не только к спрайту!
-        // Это обеспечит правильную ориентацию как визуально, так и для физики
-        let action = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
-        run(action)
     }
     
     // MARK: - Настройка физического тела

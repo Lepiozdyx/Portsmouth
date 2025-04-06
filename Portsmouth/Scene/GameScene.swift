@@ -314,11 +314,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Если направление изменилось, выполняем поворот
         if shipNode.direction != newDirection {
-            // Обновляем направление (это вызовет updateRotation через didSet)
+            // Обновляем направление
             shipNode.direction = newDirection
             
-            // В этом месте не нужна дополнительная анимация поворота,
-            // т.к. обновление производится через didSet свойства direction
+            // Обновление ориентации будет вызвано автоматически через didSet
         }
     }
     

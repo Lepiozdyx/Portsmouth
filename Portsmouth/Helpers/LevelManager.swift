@@ -56,7 +56,7 @@ class LevelManager {
             ShipModel(
                 initialGridPosition: GridPosition(x: 6, y: 7),
                 direction: .east,
-                turnPattern: .straight
+                turnPattern: .left
             ),
             // Корабль снизу
             ShipModel(
@@ -68,7 +68,8 @@ class LevelManager {
         
         // 2. Создаем перекрестки в соответствии со схемой
         let intersections: [IntersectionModel] = [
-            IntersectionModel(gridPosition: GridPosition(x: 4, y: 7))
+            IntersectionModel(gridPosition: GridPosition(x: 4, y: 7)),
+            IntersectionModel(gridPosition: GridPosition(x: 8, y: 7))
         ]
         
         // 3. Создаем препятствия (порты/доки) в соответствии со схемой
