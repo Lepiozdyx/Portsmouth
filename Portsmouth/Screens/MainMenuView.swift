@@ -9,7 +9,6 @@ struct MainMenuView: View {
     
     var body: some View {
         ZStack {
-            // Фоновое изображение или градиент
             LinearGradient(
                 gradient: Gradient(colors: [.blue, .cyan.opacity(0.8)]),
                 startPoint: .top,

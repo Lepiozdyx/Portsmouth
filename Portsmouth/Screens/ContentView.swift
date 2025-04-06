@@ -10,7 +10,6 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Отображаем соответствующий экран в зависимости от состояния игры
                 switch gameViewModel.gameState {
                 case .menu:
                     MainMenuView(gameViewModel: gameViewModel)
