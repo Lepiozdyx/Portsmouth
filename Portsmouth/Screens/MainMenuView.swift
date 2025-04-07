@@ -15,8 +15,8 @@ struct MainMenuView: View {
             VStack(spacing: 30) {
                 // Счетчик монет
                 HStack(alignment: .top) {
-                    Button {
-                        // показать экран настроек
+                    NavigationLink {
+                        SettingsView()
                     } label: {
                         Image(.settingsButton)
                             .resizable()
@@ -49,7 +49,7 @@ struct MainMenuView: View {
                     }
                     
                     HStack(alignment: .top) {
-                        Button {
+                        NavigationLink {
                             // показать экран магазина
                         } label: {
                             Image(.shopButton)
@@ -59,7 +59,7 @@ struct MainMenuView: View {
                         
                         Spacer()
                         
-                        Button {
+                        NavigationLink {
                             // показать экран достижений
                         } label: {
                             Image(.achievementsButton)

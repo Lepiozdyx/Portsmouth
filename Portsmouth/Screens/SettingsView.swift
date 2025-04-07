@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct SettingsView: View {
+    
+    @StateObject private var settings = SettingsManager.shared
+    
     var body: some View {
         ZStack {
             BackgoundView(img: .bgmenu)
@@ -23,7 +26,9 @@ struct SettingsView: View {
                             .resizable()
                             .frame(width: 75, height: 70)
                         
-                        ToggleButtonView(name: "sound", isOn: true, action: {})
+                        ToggleButtonView(name: "sound", isOn: settings.isSoundOn) {
+                            settings.toggleSound()
+                        }
                     }
                     
                     HStack(alignment: .bottom, spacing: 30) {
@@ -31,7 +36,9 @@ struct SettingsView: View {
                             .resizable()
                             .frame(width: 75, height: 70)
                         
-                        ToggleButtonView(name: "music", isOn: true, action: {})
+                        ToggleButtonView(name: "music", isOn: settings.isMusicOn) {
+                            settings.toggleMusic()
+                        }
                     }
                 }
             }
@@ -46,6 +53,9 @@ struct SettingsView: View {
 
 // MARK: - SettingsFrame
 struct SettingsFrame: View {
+    
+    @StateObject private var settings = SettingsManager.shared
+    
     var body: some View {
         Image(.undrly)
             .resizable()
@@ -59,7 +69,7 @@ struct SettingsFrame: View {
             }
             .overlay(alignment: .bottom) {
                 Button {
-                    // rate action
+                    settings.requestReview()
                 } label: {
                     Image(.rateButton)
                         .resizable()
@@ -96,7 +106,7 @@ struct ToggleButtonView: View {
                     .overlay(alignment: isOn ? .trailing : .leading) {
                         Image(.circleButton)
                             .resizable()
-                            .frame(width: 45, height: 45)
+                            .frame(width: 45, height: 40)
                             .overlay {
                                 Text(isOn ? "on" : "off")
                                     .font(.system(size: 14, weight: .heavy, design: .monospaced))

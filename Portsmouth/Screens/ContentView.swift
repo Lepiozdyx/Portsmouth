@@ -2,7 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     // MARK: - ViewModel
-    
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var settings = SettingsManager.shared
     @StateObject private var gameViewModel = GameViewModel()
     
     // MARK: - Body
@@ -24,6 +25,21 @@ struct ContentView: View {
             .navigationBarHidden(true)
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            if settings.isMusicOn {
+                settings.playMusic()
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            switch newPhase {
+            case .active:
+                settings.playMusic()
+            case .background, .inactive:
+                settings.stopMusic()
+            @unknown default:
+                break
+            }
+        }
     }
 }
 
