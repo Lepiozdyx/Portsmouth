@@ -44,20 +44,12 @@ struct GameView: View {
                 VStack {
                     TopBarView(
                         coins: gameViewModel.coins,
-                        pauseAction: gameViewModel.pauseGame,
+                        returnToMenuAction: gameViewModel.returnToMainMenu,
                         restartAction: gameViewModel.restartLevel
                     )
                     .padding([.horizontal, .top])
                     
                     Spacer()
-                }
-                
-                // Оверлей паузы
-                if gameViewModel.gameState == .paused {
-                    PauseOverlayView(
-                        resumeAction: gameViewModel.resumeGame,
-                        returnToMenuAction: gameViewModel.returnToMainMenu
-                    )
                 }
                 
                 // Оверлей победы

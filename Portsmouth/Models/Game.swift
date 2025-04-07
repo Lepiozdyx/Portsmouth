@@ -22,10 +22,10 @@ enum ShipDirection: String, Codable {
     /// Возвращает угол поворота в радианах
     var angle: CGFloat {
         switch self {
-        case .north: return 0
-        case .south: return CGFloat.pi
-        case .east: return CGFloat.pi / 2
-        case .west: return -CGFloat.pi / 2
+        case .north: return 0               // 0 градусов (вверх)
+        case .south: return CGFloat.pi      // 180 градусов (вниз)
+        case .east: return CGFloat.pi / 2   // 90 градусов (вправо)
+        case .west: return -CGFloat.pi / 2  // -90 градусов (влево)
         }
     }
     
@@ -65,7 +65,6 @@ enum GameState: Equatable {
     case menu        // Главное меню
     case levelSelect // Выбор уровня
     case playing     // Игровой процесс
-    case paused      // Пауза
     case victory     // Победа
     case gameOver    // Поражение
 }
@@ -132,7 +131,7 @@ struct GridSettings: Codable {
     let height: Int       // Высота сетки в ячейках
     let cellSize: CGFloat // Размер ячейки в точках
     
-    static let `default` = GridSettings(width: 10, height: 15, cellSize: 40)
+    static let `default` = GridSettings(width: 9, height: 15, cellSize: 40)
 }
 
 /// Модель уровня

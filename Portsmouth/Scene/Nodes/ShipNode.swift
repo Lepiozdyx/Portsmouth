@@ -1,7 +1,6 @@
 import SpriteKit
 import UIKit
 
-/// Класс, представляющий корабль в игровой сцене
 class ShipNode: SKNode {
     // MARK: - Свойства
     
@@ -12,7 +11,7 @@ class ShipNode: SKNode {
     var direction: ShipDirection {
         didSet {
             // При изменении направления обновляем ориентацию корабля
-            applyCorrectRotation()
+            updateOrientation()
         }
     }
     
@@ -36,7 +35,7 @@ class ShipNode: SKNode {
         self.turnPattern = turnPattern
         
         // Создаем спрайт корабля с текстурой "ship"
-        let shipTexture = SKTexture(imageNamed: "ship")
+        let shipTexture = SKTexture(imageNamed: "ship2")
         shipSprite = SKSpriteNode(texture: shipTexture)
         shipSprite.size = size
         
@@ -45,7 +44,7 @@ class ShipNode: SKNode {
         patternIndicator.text = turnPattern.indicatorText
         patternIndicator.fontSize = size.width * 0.4
         patternIndicator.fontColor = .black
-        patternIndicator.position = CGPoint(x: 0, y: 0) // Центрируем индикатор
+        patternIndicator.position = CGPoint(x: 0, y: 0)
         patternIndicator.verticalAlignmentMode = .center
         patternIndicator.horizontalAlignmentMode = .center
         
@@ -58,8 +57,8 @@ class ShipNode: SKNode {
         // Запускаем анимацию пульсации для неактивного состояния
         startPulseAnimation()
         
-        // ВАЖНО: Применяем начальное вращение только после инициализации
-        applyCorrectRotation(animated: false)
+        // Устанавливаем начальную ориентацию
+        updateOrientation(animated: false)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -68,36 +67,36 @@ class ShipNode: SKNode {
     
     // MARK: - Поворот корабля
     
-    /// Применяет правильный поворот в зависимости от направления
-    func applyCorrectRotation(animated: Bool = true) {
+    /// Обновляет ориентацию корабля в соответствии с направлением движения
+    private func updateOrientation(animated: Bool = true) {
         let duration: TimeInterval = isMoving && animated ? 0.2 : 0.0
         
-        // Рассчитываем правильный угол поворота
-        // Исходная текстура направлена вверх (.north)
-        let angle = getAngleForDirection(direction)
+        // Определяем правильный угол поворота
+        let angle: CGFloat
+        
+        switch direction {
+        case .north:
+            angle = 0                // 0 градусов (вверх)
+        case .south:
+            angle = CGFloat.pi       // 180 градусов (вниз)
+        case .east:
+            angle = CGFloat.pi / 2   // 90 градусов (вправо)
+        case .west:
+            angle = -CGFloat.pi / 2  // -90 градусов (влево)
+        }
         
         // Выполняем поворот
-        let rotateAction = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
-        shipSprite.run(rotateAction)
+        if animated {
+            let rotateAction = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
+            shipSprite.run(rotateAction)
+        } else {
+            shipSprite.zRotation = angle
+        }
     }
     
-    /// Получает угол поворота для заданного направления
-    private func getAngleForDirection(_ direction: ShipDirection) -> CGFloat {
-        // Поскольку текстура изначально смотрит вверх (north),
-        // для других направлений нужно повернуть:
-        switch direction {
-        case .north: // Вверх (исходное положение)
-            return 0
-            
-        case .south: // Вниз (180 градусов)
-            return .pi
-            
-        case .east: // Вправо (90 градусов по часовой)
-            return .pi / 2
-            
-        case .west: // Влево (90 градусов против часовой)
-            return -.pi / 2
-        }
+    /// Применяет правильный поворот в зависимости от направления
+    func applyCorrectRotation(animated: Bool = true) {
+        updateOrientation(animated: animated)
     }
     
     // MARK: - Настройка физического тела
@@ -107,8 +106,8 @@ class ShipNode: SKNode {
         physicsBody = SKPhysicsBody(circleOfRadius: radius)
         physicsBody?.isDynamic = true
         physicsBody?.categoryBitMask = categoryBitMask
-        physicsBody?.contactTestBitMask = categoryBitMask // Проверяем контакт с другими кораблями
-        physicsBody?.collisionBitMask = 0 // Отключаем физическую коллизию
+        physicsBody?.contactTestBitMask = categoryBitMask
+        physicsBody?.collisionBitMask = 0
     }
     
     // MARK: - Обработчик нажатия

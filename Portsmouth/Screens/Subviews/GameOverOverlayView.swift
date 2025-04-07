@@ -7,41 +7,33 @@ struct GameOverOverlayView: View {
     var body: some View {
         ZStack {
             // Затемненный фон
-            Color.black.opacity(0.7)
-                .ignoresSafeArea()
+            BackgoundView(img: .bgmenu)
             
-            // Диалог поражения
-            VStack(spacing: 20) {
-                Text("Game Over")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text("Корабли столкнулись!")
-                    .font(.title2)
-                    .foregroundColor(.red)
-                
-                // Кнопка перезапуска
-                Button(action: retryAction) {
-                    Text("Попробовать снова")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(Color.blue)
-                        .cornerRadius(10)
+            VStack {
+                HStack {
+                    Button {
+                        returnToMenuAction()
+                    } label: {
+                        Image(.backButton)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 60)
+                    }
+                    Spacer()
                 }
-                
-                // Кнопка возврата в меню
-                Button(action: returnToMenuAction) {
-                    Text("В меню")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(Color.gray)
-                        .cornerRadius(10)
-                }
+                Spacer()
+            }
+            .padding([.top, .horizontal])
+            
+            GameOverFrame(img: .lose)
+            
+            Button {
+                retryAction()
+            } label: {
+                Image(.tryagainButton)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 130)
             }
         }
     }
@@ -52,4 +44,31 @@ struct GameOverOverlayView: View {
         retryAction: {},
         returnToMenuAction: {}
     )
+}
+
+// MARK: - GameOverFrame
+struct GameOverFrame: View {
+    
+    let img: ImageResource
+    
+    var body: some View {
+        Image(.undrly)
+            .resizable()
+            .frame(maxWidth: 300, maxHeight: 250)
+            .overlay(alignment: .top) {
+                Image(img)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200)
+                    .offset(y: -40)
+                    .background(alignment: .top) {
+                        Image(.boat)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 110)
+                            .offset(y: -95)
+                    }
+            }
+            .padding()
+    }
 }

@@ -9,68 +9,67 @@ struct MainMenuView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [.blue, .cyan.opacity(0.8)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            BackgoundView(img: .bgmenu)
             
             // Контент меню
             VStack(spacing: 30) {
                 // Счетчик монет
-                HStack {
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.yellow)
-                    
-                    Text("\(gameViewModel.coins)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                HStack(alignment: .top) {
+                    Button {
+                        // показать экран настроек
+                    } label: {
+                        Image(.settingsButton)
+                            .resizable()
+                            .frame(width: 60, height: 60)
+                    }
+
+                    Spacer()
+                    CounterView(amount: gameViewModel.coins)
                 }
-                .padding()
-                .background(Color.black.opacity(0.2))
-                .cornerRadius(15)
+                .padding([.horizontal, .top])
                 
+                Spacer()
+                
+                Image(.logo)
+                    .resizable()
+                    .frame(width: 250, height: 110)
+                
+                Spacer()
                 Spacer()
                 
                 // Кнопки меню
-                VStack(spacing: 20) {
+                VStack(spacing: 40) {
                     // Кнопка "Играть"
-                    MenuButton(title: "Играть", icon: "play.fill") {
+                    Button {
                         gameViewModel.showLevelSelection()
+                    } label: {
+                        Image(.playButton)
+                            .resizable()
+                            .frame(width: 175, height: 75)
+                    }
+                    
+                    HStack(alignment: .top) {
+                        Button {
+                            // показать экран магазина
+                        } label: {
+                            Image(.shopButton)
+                                .resizable()
+                                .frame(width: 80, height: 100)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            // показать экран достижений
+                        } label: {
+                            Image(.achievementsButton)
+                                .resizable()
+                                .frame(width: 80, height: 100)
+                        }
                     }
                 }
-                
-                Spacer()
+                .padding()
             }
-            .padding()
-        }
-    }
-}
-
-/// Компонент для кнопки главного меню
-struct MenuButton: View {
-    let title: String
-    let icon: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title2)
-                
-                Text(title)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-            }
-            .foregroundColor(.white)
-            .frame(width: 250, height: 60)
-            .background(Color.blue.opacity(0.8))
-            .cornerRadius(15)
-            .shadow(radius: 5)
         }
     }
 }

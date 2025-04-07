@@ -17,7 +17,7 @@ struct ContentView: View {
                 case .levelSelect:
                     LevelSelectView(gameViewModel: gameViewModel)
                     
-                case .playing, .paused, .victory, .gameOver:
+                case .playing, .victory, .gameOver:
                     GameView(gameViewModel: gameViewModel)
                 }
             }

@@ -37,20 +37,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Узел-контейнер для игрового поля (для центрирования)
     private var gameContainerNode: SKNode?
     
+    /// Фоновая текстура воды
+    private var waterBackgroundNode: SKSpriteNode?
+    
     // MARK: - Жизненный цикл
     
     override func didMove(to view: SKView) {
-        backgroundColor = SKColor.systemTeal.withAlphaComponent(0.5) // Светло-голубой цвет для воды
+        // Устанавливаем начальные размеры, если они еще не установлены
+        if screenSize == .zero {
+            screenSize = view.bounds.size
+        }
         
         // Настройка физики
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
+        
+        // Настройка фона с текстурой воды вместо сплошного цвета
+        setupWaterBackground()
         
         // Загрузка уровня
         setupLevel()
         
         // Добавляем границы сцены для определения выхода кораблей
         setupScreenBoundaries()
+    }
+    
+    // MARK: - Настройка фона с текстурой воды
+    
+    private func setupWaterBackground() {
+        // Удаляем старый фоновый узел, если он существует
+        waterBackgroundNode?.removeFromParent()
+        
+        // Загружаем текстуру воды
+        let waterTexture = SKTexture(imageNamed: "bgclassic")
+        
+        // Создаем большой спрайт, который будет покрывать весь экран
+        let backgroundSprite = SKSpriteNode(texture: waterTexture)
+        
+        // Устанавливаем размер спрайта, чтобы он покрывал весь экран
+        // и немного больше для гарантии отсутствия пустых краев
+        let scale = max(
+            screenSize.width / waterTexture.size().width,
+            screenSize.height / waterTexture.size().height
+        ) + 0.1
+        
+        backgroundSprite.size = CGSize(
+            width: waterTexture.size().width * scale,
+            height: waterTexture.size().height * scale
+        )
+        
+        // Центрируем фон по сцене
+        backgroundSprite.position = CGPoint(x: screenSize.width / 2, y: screenSize.height / 2)
+        
+        // Размещаем фон ниже всех остальных элементов
+        backgroundSprite.zPosition = -100
+        
+        // Устанавливаем режим повторения текстуры
+        backgroundSprite.texture?.filteringMode = .nearest
+        
+        // Добавляем фон на сцену
+        addChild(backgroundSprite)
+        waterBackgroundNode = backgroundSprite
+        
+        // Устанавливаем прозрачный цвет фона сцены
+        backgroundColor = .clear
     }
     
     // MARK: - Обновление размеров
@@ -67,6 +117,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Обновляем размер сцены
         self.size = size
+        
+        // Обновляем фон с водой
+        setupWaterBackground()
         
         // Если уровень уже настроен, обновим его размеры
         if let level = levelViewModel?.level, gameContainerNode != nil {
@@ -310,27 +363,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func handleShipAtIntersection(_ shipNode: ShipNode) {
         // Получаем новое направление в зависимости от паттерна поворота
-        let newDirection = shipNode.direction.direction(after: shipNode.turnPattern)
+        let oldDirection = shipNode.direction
+        let newDirection = oldDirection.direction(after: shipNode.turnPattern)
         
         // Если направление изменилось, выполняем поворот
-        if shipNode.direction != newDirection {
+        if oldDirection != newDirection {
             // Обновляем направление
             shipNode.direction = newDirection
-            
-            // Обновление ориентации будет вызвано автоматически через didSet
         }
     }
     
-    private func performTurnAnimation(_ shipNode: ShipNode, from oldDirection: ShipDirection, to newDirection: ShipDirection) {
-        // Определяем угол поворота
-        let newAngle = newDirection.angle
-        
-        // Создаем действие поворота
-        let rotateAction = SKAction.rotate(toAngle: newAngle, duration: 0.2, shortestUnitArc: true)
-        
-        // Выполняем анимацию
-        shipNode.run(rotateAction)
-    }
+    //    private func performTurnAnimation(_ shipNode: ShipNode, from oldDirection: ShipDirection, to newDirection: ShipDirection) {
+    //        // Определяем угол поворота
+    //        let newAngle = newDirection.angle
+    //
+    //        // Создаем действие поворота
+    //        let rotateAction = SKAction.rotate(toAngle: newAngle, duration: 0.2, shortestUnitArc: true)
+    //
+    //        // Выполняем анимацию
+    //        shipNode.run(rotateAction)
+    //    }
     
     private func shipExitedScreen(_ shipNode: ShipNode) {
         // Удаляем корабль со сцены
@@ -357,7 +409,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Проверяем выход корабля за пределы экрана
         if (bodyA.categoryBitMask == PhysicsCategory.ship && bodyB.categoryBitMask == PhysicsCategory.boundary) ||
-           (bodyA.categoryBitMask == PhysicsCategory.boundary && bodyB.categoryBitMask == PhysicsCategory.ship) {
+            (bodyA.categoryBitMask == PhysicsCategory.boundary && bodyB.categoryBitMask == PhysicsCategory.ship) {
             
             let shipBody = (bodyA.categoryBitMask == PhysicsCategory.ship) ? bodyA : bodyB
             

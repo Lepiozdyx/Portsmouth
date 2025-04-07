@@ -51,11 +51,6 @@ class GameViewModel: ObservableObject {
         gameState = .playing
     }
     
-    /// Поставить игру на паузу
-    func pauseGame() {
-        gameState = .paused
-    }
-    
     /// Продолжить игру
     func resumeGame() {
         gameState = .playing
