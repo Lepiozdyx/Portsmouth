@@ -3,7 +3,6 @@ import Combine
 import SpriteKit
 
 /// Протокол делегата для взаимодействия с GameViewModel
-/// Убираем ограничение AnyObject, чтобы структуры SwiftUI могли соответствовать этому протоколу
 protocol LevelViewModelDelegate {
     /// Уровень успешно пройден
     func levelCompleted()
@@ -119,5 +118,10 @@ class LevelViewModel: ObservableObject {
             intersections: level.intersections,
             obstacles: level.obstacles
         )
+    }
+    
+    /// Метод для освобождения ресурсов
+    func cleanup() {
+        delegate = nil
     }
 }

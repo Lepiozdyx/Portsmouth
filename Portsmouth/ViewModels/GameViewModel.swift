@@ -66,6 +66,7 @@ class GameViewModel: ObservableObject {
         if let currentId = currentLevel?.id,
            let nextLevel = levelManager.level(with: currentId + 1) {
             progressService.unlockLevel(id: nextLevel.id)
+            loadUserProgress()
         }
         
         gameState = .victory
@@ -78,6 +79,8 @@ class GameViewModel: ObservableObject {
     
     /// Вернуться в главное меню
     func returnToMainMenu() {
+        // Очищаем currentLevel для избежания утечек памяти
+        currentLevel = nil
         gameState = .menu
     }
     
@@ -95,8 +98,15 @@ class GameViewModel: ObservableObject {
     
     /// Перезапустить текущий уровень
     func restartLevel() {
+        // Сохраняем ID текущего уровня перед перезапуском
         if let levelId = currentLevel?.id {
-            startGame(levelId: levelId)
+            // Сначала меняем состояние, чтобы произошло обновление всех связанных вью
+            gameState = .menu
+            
+            // Используем DispatchQueue чтобы дать время для обновления вью
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.startGame(levelId: levelId)
+            }
         }
     }
     

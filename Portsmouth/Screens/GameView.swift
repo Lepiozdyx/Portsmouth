@@ -11,6 +11,7 @@ struct GameView: View {
     
     @State private var scene: GameScene?
     @State private var safeAreaInsets: EdgeInsets = EdgeInsets()
+    @State private var needsReset: Bool = false
     
     // MARK: - Инициализация
     
@@ -37,15 +38,35 @@ struct GameView: View {
                     }
                 
                 // Основное игровое представление
-                SpriteView(scene: getGameScene(size: geometry.size, safeArea: geometry.safeAreaInsets))
-                    .edgesIgnoringSafeArea(.all)
+                if needsReset {
+                    // Временный контейнер, пока сцена сбрасывается
+                    Color.blue.opacity(0.3)
+                        .onAppear {
+                            // Сбрасываем сцену и флаг
+                            self.scene = nil
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.needsReset = false
+                            }
+                        }
+                } else {
+                    SpriteView(scene: getGameScene(size: geometry.size, safeArea: geometry.safeAreaInsets))
+                        .edgesIgnoringSafeArea(.all)
+                }
                 
                 // Верхний бар с кнопками
                 VStack {
                     TopBarView(
                         coins: gameViewModel.coins,
-                        returnToMenuAction: gameViewModel.returnToMainMenu,
-                        restartAction: gameViewModel.restartLevel
+                        returnToMenuAction: {
+                            // Очищаем сцену перед выходом в меню
+                            scene = nil
+                            gameViewModel.returnToMainMenu()
+                        },
+                        restartAction: {
+                            // Сбрасываем сцену и рестартим уровень
+                            resetGameScene()
+                            levelViewModel.restartLevel()
+                        }
                     )
                     .padding([.horizontal, .top])
                     
@@ -55,8 +76,15 @@ struct GameView: View {
                 // Оверлей победы
                 if gameViewModel.gameState == .victory {
                     VictoryOverlayView(
-                        nextLevelAction: gameViewModel.goToNextLevel,
-                        returnToMenuAction: gameViewModel.returnToMainMenu
+                        nextLevelAction: {
+                            resetGameScene()
+                            gameViewModel.goToNextLevel()
+                        },
+                        returnToMenuAction: {
+                            // Очищаем сцену перед выходом в меню
+                            scene = nil
+                            gameViewModel.returnToMainMenu()
+                        }
                     )
                 }
                 
@@ -64,16 +92,25 @@ struct GameView: View {
                 if gameViewModel.gameState == .gameOver {
                     GameOverOverlayView(
                         retryAction: {
-                            levelViewModel.restartLevel()
+                            // Сбрасываем сцену для перезапуска
+                            resetGameScene()
                             gameViewModel.restartLevel()
                         },
-                        returnToMenuAction: gameViewModel.returnToMainMenu
+                        returnToMenuAction: {
+                            // Очищаем сцену перед выходом в меню
+                            scene = nil
+                            gameViewModel.returnToMainMenu()
+                        }
                     )
                 }
             }
         }
         .onAppear {
             setupLevelViewModel()
+        }
+        .onDisappear {
+            // Очищаем сцену при исчезновении вью для предотвращения утечек памяти
+            scene = nil
         }
     }
     
@@ -84,6 +121,13 @@ struct GameView: View {
         
         // Если у нас уже есть сцена, обновим её размеры
         scene?.updateSceneSize(size: size, safeArea: safeArea)
+    }
+    
+    // MARK: - Сброс игровой сцены
+    
+    private func resetGameScene() {
+        scene = nil
+        needsReset = true
     }
     
     // MARK: - SpriteKit
@@ -127,9 +171,10 @@ extension GameView: LevelViewModelDelegate {
     }
     
     func levelRestarted() {
-        scene = nil
+        // Сбрасываем сцену при перезапуске уровня
+        resetGameScene()
     }
-}
+}   
 
 #Preview {
     GameView(gameViewModel: GameViewModel())
