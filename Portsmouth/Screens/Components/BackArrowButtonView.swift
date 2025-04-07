@@ -15,6 +15,8 @@ struct BackArrowButtonView: View {
                         .scaledToFit()
                         .frame(width: 60)
                 }
+                .withSound()
+                
                 Spacer()
             }
             Spacer()

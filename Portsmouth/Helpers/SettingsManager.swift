@@ -10,13 +10,26 @@ final class SettingsManager: ObservableObject {
     @Published var isSoundOn: Bool {
         didSet {
             defaults.set(isSoundOn, forKey: "soundOn")
+            
+            if !isSoundOn && isMusicOn {
+                isMusicOn = false
+            }
         }
     }
     
     @Published var isMusicOn: Bool {
         didSet {
             defaults.set(isMusicOn, forKey: "musicOn")
-            isMusicOn ? playMusic() : stopMusic()
+            
+            if isMusicOn {
+                if isSoundOn {
+                    playMusic()
+                } else {
+                    isMusicOn = false
+                }
+            } else {
+                stopMusic()
+            }
         }
     }
     
@@ -47,16 +60,26 @@ final class SettingsManager: ObservableObject {
     }
     
     // MARK: - Sound & Music
-    func toggleSound() { isSoundOn.toggle() }
-    func toggleMusic() { isMusicOn.toggle() }
+    func toggleSound() {
+        isSoundOn.toggle()
+    }
+    
+    func toggleMusic() {
+        if !isSoundOn && !isMusicOn {
+            return
+        }
+        isMusicOn.toggle()
+    }
     
     func playSound() {
-        guard isSoundOn, let player = soundPlayer, !player.isPlaying else { return }
+        guard isSoundOn, let player = soundPlayer else { return }
+        
+        player.currentTime = 0
         player.play()
     }
     
     func playMusic() {
-        guard isMusicOn, let player = audioPlayer, !player.isPlaying else { return }
+        guard isSoundOn, isMusicOn, let player = audioPlayer, !player.isPlaying else { return }
         player.play()
     }
     

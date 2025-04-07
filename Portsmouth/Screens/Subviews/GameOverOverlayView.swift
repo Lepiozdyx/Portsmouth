@@ -19,6 +19,9 @@ struct GameOverOverlayView: View {
                             .scaledToFit()
                             .frame(width: 60)
                     }
+                    .withSound()
+                    .buttonStyle(.plain)
+                    
                     Spacer()
                 }
                 Spacer()
@@ -35,6 +38,8 @@ struct GameOverOverlayView: View {
                     .scaledToFit()
                     .frame(width: 130)
             }
+            .withSound()
+            .buttonStyle(.plain)
         }
     }
 }

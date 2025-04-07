@@ -17,6 +17,7 @@ struct TopBarView: View {
                     .scaledToFit()
                     .frame(width: 60)
             }
+            .withSound()
             
             Spacer()
             
@@ -33,6 +34,7 @@ struct TopBarView: View {
                     .resizable()
                     .frame(width: 60, height: 60)
             }
+            .withSound()
         }
     }
 }

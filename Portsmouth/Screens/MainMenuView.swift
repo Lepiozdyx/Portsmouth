@@ -22,6 +22,7 @@ struct MainMenuView: View {
                             .resizable()
                             .frame(width: 60, height: 60)
                     }
+                    .withClickSound()
 
                     Spacer()
                     CounterView(amount: gameViewModel.coins)
@@ -47,6 +48,7 @@ struct MainMenuView: View {
                             .resizable()
                             .frame(width: 175, height: 75)
                     }
+                    .withSound()
                     
                     HStack(alignment: .top) {
                         NavigationLink {
@@ -56,6 +58,7 @@ struct MainMenuView: View {
                                 .resizable()
                                 .frame(width: 80, height: 100)
                         }
+                        .withClickSound()
                         
                         Spacer()
                         
@@ -66,6 +69,7 @@ struct MainMenuView: View {
                                 .resizable()
                                 .frame(width: 80, height: 100)
                         }
+                        .withClickSound()
                     }
                 }
                 .padding()

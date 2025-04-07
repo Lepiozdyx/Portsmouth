@@ -1,10 +1,3 @@
-//
-//  SettingsView.swift
-//  Portsmouth
-//
-//  Created by Alex on 07.04.2025.
-//
-
 import SwiftUI
 
 struct SettingsView: View {
@@ -39,6 +32,8 @@ struct SettingsView: View {
                         ToggleButtonView(name: "music", isOn: settings.isMusicOn) {
                             settings.toggleMusic()
                         }
+                        .disabled(!settings.isSoundOn) // Блокируем кнопку музыки если звук выключен
+                        .opacity(settings.isSoundOn ? 1.0 : 0.5) // Визуальное отображение блокировки
                     }
                 }
             }
@@ -77,7 +72,7 @@ struct SettingsFrame: View {
                         .frame(width: 150)
                         .offset(y: 40)
                 }
-                .buttonStyle(.plain)
+                .withSound()
             }
             .padding()
     }
@@ -115,7 +110,7 @@ struct ToggleButtonView: View {
                             .padding(.horizontal, 6)
                     }
             }
-            .buttonStyle(.plain)
+            .withSound()
         }
     }
 }

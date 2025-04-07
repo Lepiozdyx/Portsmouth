@@ -77,6 +77,8 @@ struct LevelSelectView: View {
                     .cornerRadius(10)
                     .shadow(radius: 3)
                 }
+                .withSound()
+                .buttonStyle(.plain)
                 .padding(.bottom)
             }
         }
@@ -120,6 +122,7 @@ struct LevelButton: View {
                 }
             }
         }
+        .buttonStyle(.plain)
         .disabled(!isUnlocked)
     }
 }
