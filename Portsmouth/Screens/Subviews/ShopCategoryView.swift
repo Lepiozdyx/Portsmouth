@@ -99,6 +99,4 @@ struct ShopCategoryView: View {
         onSelect: { _ in },
         onPurchase: { _ in return true }
     )
-    .padding()
-    .background(Color.gray.opacity(0.2))
 }
