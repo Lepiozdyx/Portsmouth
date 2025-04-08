@@ -245,18 +245,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         parent.addChild(gridNode)
     }
     
-    private func setupObstacles(_ obstacles: [ObstacleModel], parent: SKNode) {
+    func setupObstacles(_ obstacles: [ObstacleModel], parent: SKNode) {
+        // Сначала сохраняем позиции всех препятствий для последующей проверки коллизий
         for obstacle in obstacles {
-            // Сохраняем позицию препятствия
             obstaclePositions.insert(obstacle.gridPosition)
+        }
+        
+        // Находим прямоугольные блоки препятствий
+        let blocks = ObstacleUtils.findRectangularBlocks(from: obstacles)
+        
+        // Создаем визуальное представление для каждого блока
+        for block in blocks {
+            // Вычисляем размер в точках
+            let width = CGFloat(block.width) * cellSize
+            let height = CGFloat(block.height) * cellSize
             
-            // Создаем визуальное представление препятствия
-            let position = obstacle.gridPosition.toPoint(cellSize: cellSize)
-            let obstacleNode = SKSpriteNode(color: .gray, size: CGSize(width: cellSize, height: cellSize))
-            obstacleNode.position = position
+            // Преобразуем позицию из координат сетки в координаты сцены
+            let centerX = block.position.x * cellSize
+            let centerY = block.position.y * cellSize
             
-            // Настройка физического тела
-            obstacleNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: cellSize, height: cellSize))
+            // Получаем текстуру
+            let texture = ObstacleUtils.getTextureForBlock(block)
+            
+            // Создаем ноду для блока препятствий
+            let obstacleNode = SKSpriteNode(texture: texture, size: CGSize(width: width, height: height))
+            
+            // Настраиваем 9-slice scaling для правильного масштабирования текстуры
+            ObstacleUtils.configurePortNode(obstacleNode)
+            
+            obstacleNode.size = CGSize(width: width, height: height)
+            obstacleNode.position = CGPoint(x: centerX, y: centerY)
+            
+            // Настройка физического тела для всего блока
+            obstacleNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: width, height: height))
             obstacleNode.physicsBody?.isDynamic = false
             obstacleNode.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
             obstacleNode.physicsBody?.contactTestBitMask = PhysicsCategory.none
