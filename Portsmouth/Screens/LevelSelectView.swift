@@ -18,7 +18,23 @@ struct LevelSelectView: View {
         ZStack {
             BackgoundView(img: .bglvls)
             
-            BackArrowButtonView()
+            VStack {
+                HStack {
+                    Button {
+                        gameViewModel.returnToMainMenu()
+                    } label: {
+                        Image(.backButton)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 60)
+                    }
+                    .withSound()
+                    
+                    Spacer()
+                }
+                Spacer()
+            }
+            .padding([.top, .horizontal])
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 30) {

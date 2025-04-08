@@ -58,22 +58,39 @@ class GameViewModel: ObservableObject {
     
     /// Завершить уровень успехом
     func completeLevel() {
+        // Получаем ID текущего уровня
+        guard let currentLevelId = currentLevel?.id else {
+            return
+        }
+        
         // Добавляем монеты за прохождение
         progressService.addCoins(100)
         loadUserProgress()
         
+        // Отмечаем уровень как пройденный без столкновений
+        // (здесь мы всегда отмечаем как успешный, т.к. метод вызывается только при успехе)
+        CollisionTrackerService.shared.markLevelAsCollisionFree(levelId: currentLevelId)
+        
         // Разблокируем следующий уровень, если он существует
-        if let currentId = currentLevel?.id,
-           let nextLevel = levelManager.level(with: currentId + 1) {
+        if let nextLevel = levelManager.level(with: currentLevelId + 1) {
             progressService.unlockLevel(id: nextLevel.id)
             loadUserProgress()
         }
+        
+        // Проверяем достижения
+        AchievementService.shared.checkAchievements(completedLevelId: currentLevelId)
         
         gameState = .victory
     }
     
     /// Завершить уровень поражением
     func gameover() {
+        // Получаем ID текущего уровня
+        if let currentLevelId = currentLevel?.id {
+            // Отмечаем, что уровень был пройден со столкновением
+            CollisionTrackerService.shared.markLevelWithCollision(levelId: currentLevelId)
+        }
+        
         gameState = .gameOver
     }
     

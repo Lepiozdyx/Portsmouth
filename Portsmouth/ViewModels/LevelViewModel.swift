@@ -65,6 +65,11 @@ class LevelViewModel: ObservableObject {
     /// Столкновение кораблей
     func shipCollision() {
         isGameOver = true
+        
+        // Отмечаем столкновение для текущего уровня
+        let levelId = level.id
+        CollisionTrackerService.shared.markLevelWithCollision(levelId: levelId)
+        
         delegate?.levelFailed()
     }
     
@@ -83,6 +88,13 @@ class LevelViewModel: ObservableObject {
     /// Уровень успешно пройден
     private func completeLevel() {
         isLevelCompleted = true
+        
+        // Если не было столкновений в этом уровне, отмечаем его как пройденный без столкновений
+        if !isGameOver {
+            let levelId = level.id
+            CollisionTrackerService.shared.markLevelAsCollisionFree(levelId: levelId)
+        }
+        
         delegate?.levelCompleted()
     }
     

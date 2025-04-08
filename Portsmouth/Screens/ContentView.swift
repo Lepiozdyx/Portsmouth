@@ -19,8 +19,6 @@ struct ContentView: View {
                     LevelSelectView(gameViewModel: gameViewModel)
                     
                 case .playing, .victory, .gameOver:
-                    // Уникальный ID через UUID для принудительного пересоздания GameView
-                    // при изменениях состояния игры
                     GameView(gameViewModel: gameViewModel)
                         .id(gameViewModel.currentLevel?.id ?? 0)
                 }

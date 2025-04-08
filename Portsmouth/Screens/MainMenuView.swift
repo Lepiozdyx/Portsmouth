@@ -63,7 +63,7 @@ struct MainMenuView: View {
                         Spacer()
                         
                         NavigationLink {
-                            // показать экран достижений
+                            AchievementsView()
                         } label: {
                             Image(.achievementsButton)
                                 .resizable()
