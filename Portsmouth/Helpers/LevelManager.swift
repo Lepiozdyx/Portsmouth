@@ -243,7 +243,7 @@ class LevelManager {
             ),
             // 3
             ShipModel(
-                initialGridPosition: GridPosition(x: 4, y: 7),
+                initialGridPosition: GridPosition(x: 4, y: 8),
                 direction: .north,
                 turnPattern: .right
             ),
@@ -342,7 +342,7 @@ class LevelManager {
             ),
             // 3
             ShipModel(
-                initialGridPosition: GridPosition(x: 4, y: 7),
+                initialGridPosition: GridPosition(x: 4, y: 8),
                 direction: .north,
                 turnPattern: .straight
             ),
@@ -429,13 +429,13 @@ class LevelManager {
         let ships: [ShipModel] = [
             // 1
             ShipModel(
-                initialGridPosition: GridPosition(x: 6, y: 4),
+                initialGridPosition: GridPosition(x: 5, y: 4),
                 direction: .west,
                 turnPattern: .left
             ),
             // 2
             ShipModel(
-                initialGridPosition: GridPosition(x: 8, y: 4),
+                initialGridPosition: GridPosition(x: 7, y: 4),
                 direction: .west,
                 turnPattern: .left
             ),
@@ -453,7 +453,7 @@ class LevelManager {
             ),
             // 5
             ShipModel(
-                initialGridPosition: GridPosition(x: 4, y: 7),
+                initialGridPosition: GridPosition(x: 4, y: 8),
                 direction: .north,
                 turnPattern: .straight
             ),
@@ -562,7 +562,7 @@ class LevelManager {
         let ships: [ShipModel] = [
             // 1
             ShipModel(
-                initialGridPosition: GridPosition(x: 4, y: 4),
+                initialGridPosition: GridPosition(x: 5, y: 4),
                 direction: .east,
                 turnPattern: .right
             ),
@@ -574,7 +574,7 @@ class LevelManager {
             ),
             // 3
             ShipModel(
-                initialGridPosition: GridPosition(x: 6, y: 6),
+                initialGridPosition: GridPosition(x: 6, y: 5),
                 direction: .south,
                 turnPattern: .left
             ),
