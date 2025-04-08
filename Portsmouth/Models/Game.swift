@@ -21,11 +21,12 @@ enum ShipDirection: String, Codable {
     
     /// Возвращает угол поворота в радианах
     var angle: CGFloat {
+        let offset: CGFloat = CGFloat.pi // смещение на 180 градусов
         switch self {
-        case .north: return 0               // 0 градусов (вверх)
-        case .south: return CGFloat.pi      // 180 градусов (вниз)
-        case .east: return CGFloat.pi / 2   // 90 градусов (вправо)
-        case .west: return -CGFloat.pi / 2  // -90 градусов (влево)
+        case .north: return 0 + offset      // будет π
+        case .south: return CGFloat.pi + offset  // будет 2π, что эквивалентно 0, если брать по модулю 2π
+        case .east:  return CGFloat.pi / 2 + offset
+        case .west:  return -CGFloat.pi / 2 + offset
         }
     }
     

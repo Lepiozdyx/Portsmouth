@@ -70,27 +70,26 @@ class ShipNode: SKNode {
     /// Обновляет ориентацию корабля в соответствии с направлением движения
     private func updateOrientation(animated: Bool = true) {
         let duration: TimeInterval = isMoving && animated ? 0.2 : 0.0
-        
+
         // Определяем правильный угол поворота
         let angle: CGFloat
-        
         switch direction {
         case .north:
-            angle = 0                // 0 градусов (вверх)
+            angle = 0                // 0 градусов (смотрит вверх)
         case .south:
-            angle = CGFloat.pi       // 180 градусов (вниз)
+            angle = CGFloat.pi       // 180 градусов (смотрит вниз)
         case .east:
-            angle = CGFloat.pi / 2   // 90 градусов (вправо)
+            angle = -CGFloat.pi / 2   // 90 градусов (смотрит вправо)
         case .west:
-            angle = -CGFloat.pi / 2  // -90 градусов (влево)
+            angle = CGFloat.pi / 2  // -90 градусов (смотрит влево)
         }
-        
-        // Выполняем поворот
+
+        // Поворачиваем весь узел, чтобы все дочерние элементы (shipSprite и patternIndicator) меняли ориентацию
         if animated {
             let rotateAction = SKAction.rotate(toAngle: angle, duration: duration, shortestUnitArc: true)
-            shipSprite.run(rotateAction)
+            self.run(rotateAction)
         } else {
-            shipSprite.zRotation = angle
+            self.zRotation = angle
         }
     }
     
@@ -105,6 +104,7 @@ class ShipNode: SKNode {
         // Создаем круглое физическое тело
         physicsBody = SKPhysicsBody(circleOfRadius: radius)
         physicsBody?.isDynamic = true
+        physicsBody?.allowsRotation = false
         physicsBody?.categoryBitMask = categoryBitMask
         physicsBody?.contactTestBitMask = categoryBitMask
         physicsBody?.collisionBitMask = 0

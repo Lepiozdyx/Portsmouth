@@ -366,10 +366,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let oldDirection = shipNode.direction
         let newDirection = oldDirection.direction(after: shipNode.turnPattern)
         
-        // Если направление изменилось, выполняем поворот
+        // Если направление изменилось, обновляем его и выполняем анимацию поворота
         if oldDirection != newDirection {
-            // Обновляем направление
             shipNode.direction = newDirection
+            // Дополнительно: можно явно вызвать анимацию, если это необходимо
+            shipNode.applyCorrectRotation(animated: true)
         }
     }
     
