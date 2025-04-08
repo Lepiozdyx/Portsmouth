@@ -140,7 +140,7 @@ struct GameView: View {
         // Создаем новую сцену
         let newScene = GameScene()
         newScene.size = size
-        newScene.scaleMode = .resizeFill  // Используем resizeFill вместо aspectFill
+        newScene.scaleMode = .resizeFill
         newScene.levelViewModel = levelViewModel
         
         // Передаем информацию о размерах экрана и безопасных областях

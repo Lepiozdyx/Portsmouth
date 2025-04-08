@@ -137,8 +137,8 @@ class ShipNode: SKNode {
     
     private func startPulseAnimation() {
         // Создаем последовательность действий для пульсации
-        let scaleUp = SKAction.scale(to: 1.1, duration: 0.5)
-        let scaleDown = SKAction.scale(to: 0.9, duration: 0.5)
+        let scaleUp = SKAction.scale(to: 1.05, duration: 0.5)
+        let scaleDown = SKAction.scale(to: 0.95, duration: 0.5)
         let sequence = SKAction.sequence([scaleUp, scaleDown])
         let pulse = SKAction.repeatForever(sequence)
         

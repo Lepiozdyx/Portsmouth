@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Enums
 
-/// Направление движения корабля
+// MARK: Направление движения корабля
 enum ShipDirection: String, Codable {
     case north
     case south
@@ -45,14 +45,14 @@ enum ShipDirection: String, Codable {
     }
 }
 
-/// Паттерн поворота корабля при встрече с перекрестком
+// MARK: Паттерн поворота корабля при встрече с перекрестком
 enum TurnPattern: String, Codable {
     case straight
     case left
     case right
 }
 
-/// Тип ячейки игровой сетки
+// MARK: Тип ячейки игровой сетки
 enum CellType: String, Codable {
     case water        // Вода (по ней двигаются корабли)
     case obstacle     // Препятствие (порт, берег)
@@ -60,7 +60,7 @@ enum CellType: String, Codable {
     case ship         // Корабль (стартовая позиция)
 }
 
-/// Состояние игры
+// MARK: Состояние игры
 enum GameState: Equatable {
     case menu        // Главное меню
     case levelSelect // Выбор уровня
@@ -69,9 +69,66 @@ enum GameState: Equatable {
     case gameOver    // Поражение
 }
 
+// MARK: - Модель достижения
+enum Achievement: Int, CaseIterable, Identifiable {
+    
+    var id: Int { self.rawValue }
+    
+    case firstnavigation = 0
+    case kingoftheport
+    case navalstrategist
+    case portmaster
+    case precisecalculation
+    
+    var imageName: String {
+        switch self {
+        case .firstnavigation:
+            "firstnavigation"
+        case .kingoftheport:
+            "kingoftheport"
+        case .navalstrategist:
+            "navalstrategist"
+        case .portmaster:
+            "portmaster"
+        case .precisecalculation:
+            "precisecalculation"
+        }
+    }
+    
+    var title: String {
+        switch self {
+        case .firstnavigation:
+            "First Navigation"
+        case .kingoftheport:
+            "King of the Port"
+        case .navalstrategist:
+            "Naval Strategist"
+        case .portmaster:
+            "Port Master"
+        case .precisecalculation:
+            "Precise Calculation"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .firstnavigation:
+            "Complete the first level"
+        case .kingoftheport:
+            "Complete all levels without a single collision"
+        case .navalstrategist:
+            "Complete 5 levels"
+        case .portmaster:
+            "Complete 10 levels"
+        case .precisecalculation:
+            "Complete 5 levels without a single collision"
+        }
+    }
+}
+
 // MARK: - Models
 
-/// Модель корабля
+// MARK: Модель корабля
 struct ShipModel: Identifiable, Codable {
     let id: UUID
     let initialGridPosition: GridPosition
@@ -92,7 +149,7 @@ struct ShipModel: Identifiable, Codable {
     }
 }
 
-/// Модель перекрестка
+// MARK: Модель перекрестка
 struct IntersectionModel: Identifiable, Codable {
     let id: UUID
     let gridPosition: GridPosition
@@ -103,7 +160,7 @@ struct IntersectionModel: Identifiable, Codable {
     }
 }
 
-/// Модель препятствия
+// MARK: Модель препятствия
 struct ObstacleModel: Identifiable, Codable {
     let id: UUID
     let gridPosition: GridPosition
@@ -114,7 +171,7 @@ struct ObstacleModel: Identifiable, Codable {
     }
 }
 
-/// Позиция в игровой сетке
+// MARK: Позиция в игровой сетке
 struct GridPosition: Equatable, Codable, Hashable {
     let x: Int
     let y: Int
@@ -125,7 +182,7 @@ struct GridPosition: Equatable, Codable, Hashable {
     }
 }
 
-/// Настройки игрового поля
+// MARK: Настройки игрового поля
 struct GridSettings: Codable {
     let width: Int        // Ширина сетки в ячейках
     let height: Int       // Высота сетки в ячейках
@@ -134,7 +191,7 @@ struct GridSettings: Codable {
     static let `default` = GridSettings(width: 9, height: 15, cellSize: 40)
 }
 
-/// Модель уровня
+// MARK: Модель уровня
 struct LevelModel: Identifiable, Codable {
     let id: Int
     let name: String
@@ -160,7 +217,7 @@ struct LevelModel: Identifiable, Codable {
     }
 }
 
-/// Модель прогресса пользователя
+// MARK: Модель прогресса пользователя
 struct UserProgress: Codable {
     var coins: Int
     var unlockedLevelIds: Set<Int>
