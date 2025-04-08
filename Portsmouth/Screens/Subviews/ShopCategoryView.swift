@@ -85,9 +85,9 @@ struct ShopCategoryView: View {
 
 #Preview {
     let backgrounds: [ShopItem] = [
-        ShopItem(id: "classicport", displayName: "Classic", previewImageName: "classicport", actualAssetName: "bgclassic", price: 0),
-        ShopItem(id: "sunsetport", displayName: "Sunset", previewImageName: "sunsetport", actualAssetName: "bgsunset", price: 300),
-        ShopItem(id: "nightport", displayName: "Night", previewImageName: "nightport", actualAssetName: "bgnight", price: 300)
+        ShopItem(id: "classicport", displayName: "classic", previewImageName: "classicport", actualAssetName: "bgclassic", price: 0),
+        ShopItem(id: "sunsetport", displayName: "sunset", previewImageName: "sunsetport", actualAssetName: "bgsunset", price: 300),
+        ShopItem(id: "nightport", displayName: "night", previewImageName: "nightport", actualAssetName: "bgnight", price: 300)
     ]
     
     return ShopCategoryView(

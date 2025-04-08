@@ -52,14 +52,14 @@ struct ShopItemView: View {
                             if isPurchased {
                                 // Если элемент куплен
                                 if isSelected {
-                                    Text("Active")
+                                    Text("active")
                                         .font(.system(size: 16, weight: .heavy, design: .monospaced))
                                         .foregroundStyle(.green)
                                 } else {
                                     Button {
                                         onSelect()
                                     } label: {
-                                        Text("Use")
+                                        Text("use")
                                             .font(.system(size: 16, weight: .heavy, design: .monospaced))
                                             .foregroundStyle(.blue)
                                     }
@@ -82,56 +82,16 @@ struct ShopItemView: View {
             }
             .buttonStyle(.plain)
             .disabled(!isPurchased && item.price > currentCoins)
-            .opacity(!isPurchased && item.price > currentCoins ? 0.5 : 1.0)
+            .opacity(!isPurchased && item.price > currentCoins ? 0.8 : 1.0)
         }
     }
 }
 
-#Preview("1") {
-    // Товар куплен и выбран
+#Preview {
     ShopItemView(
-        item: ShopItem(id: "item1", displayName: "Classic", previewImageName: "classicport", actualAssetName: "bgclassic", price: 0),
+        item: ShopItem(id: "item1", displayName: "classic", previewImageName: "classicport", actualAssetName: "bgclassic", price: 0),
         isSelected: true,
         isPurchased: true,
-        currentCoins: 500,
-        onSelect: {},
-        onPurchase: { return true }
-    )
-    .frame(width: 200)
-}
-
-#Preview("2") {
-    // Товар куплен, но не выбран
-    ShopItemView(
-        item: ShopItem(id: "item2", displayName: "Sunset", previewImageName: "sunsetport", actualAssetName: "bgsunset", price: 300),
-        isSelected: false,
-        isPurchased: true,
-        currentCoins: 500,
-        onSelect: {},
-        onPurchase: { return true }
-    )
-    .frame(width: 200)
-}
-
-#Preview("3") {
-    // Товар не куплен, достаточно монет
-    ShopItemView(
-        item: ShopItem(id: "item3", displayName: "Night", previewImageName: "nightport", actualAssetName: "bgnight", price: 300),
-        isSelected: false,
-        isPurchased: false,
-        currentCoins: 500,
-        onSelect: {},
-        onPurchase: { return true }
-    )
-    .frame(width: 200)
-}
-
-#Preview("4") {
-    // Товар не куплен, недостаточно монет
-    ShopItemView(
-        item: ShopItem(id: "item4", displayName: "Yacht", previewImageName: "ship3", actualAssetName: "ship3", price: 800),
-        isSelected: false,
-        isPurchased: false,
         currentCoins: 500,
         onSelect: {},
         onPurchase: { return true }
