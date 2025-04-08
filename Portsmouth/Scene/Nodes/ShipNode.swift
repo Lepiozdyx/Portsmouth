@@ -24,8 +24,8 @@ class ShipNode: SKNode {
     /// Визуальное представление корабля
     private let shipSprite: SKSpriteNode
     
-    /// Индикатор паттерна поворота
-    private let patternIndicator: SKLabelNode
+    /// Индикатор паттерна поворота (использует текстуру вместо текста)
+    private let patternIndicator: SKSpriteNode
     
     // MARK: - Инициализация
     
@@ -40,17 +40,18 @@ class ShipNode: SKNode {
         
         // Задаем новые размеры: shipWidth и shipHeight
         let shipWidth = size.width * 0.8
-        let shipHeight = size.height * 2
+        let shipHeight = size.height * 1.6
         shipSprite.size = CGSize(width: shipWidth, height: shipHeight)
         
-        // Создаем индикатор паттерна поворота (оставляем без изменений)
-        patternIndicator = SKLabelNode(fontNamed: "Helvetica-Bold")
-        patternIndicator.text = turnPattern.indicatorText
-        patternIndicator.fontSize = shipWidth * 0.4
-        patternIndicator.fontColor = .black
+        // Создаем индикатор паттерна поворота с использованием текстур вместо текста
+        let indicatorTexture = SKTexture(imageNamed: turnPattern.indicatorTextureName)
+        patternIndicator = SKSpriteNode(texture: indicatorTexture)
+        
+        // Размер индикатора
+        patternIndicator.size = CGSize(width: shipWidth * 0.5, height: shipWidth)
+        
+        // Позиционируем индикатор
         patternIndicator.position = CGPoint(x: 0, y: 0)
-        patternIndicator.verticalAlignmentMode = .center
-        patternIndicator.horizontalAlignmentMode = .center
 
         super.init()
 
@@ -157,12 +158,12 @@ class ShipNode: SKNode {
 // MARK: - Расширения
 
 extension TurnPattern {
-    /// Текстовое представление для отображения на индикаторе
-    var indicatorText: String {
+    /// Название текстуры для отображения на индикаторе
+    var indicatorTextureName: String {
         switch self {
-        case .straight: return "S"
-        case .left: return "L"
-        case .right: return "R"
+        case .straight: return "straight"
+        case .left: return "left"
+        case .right: return "right"
         }
     }
 }

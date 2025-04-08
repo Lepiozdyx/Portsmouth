@@ -131,7 +131,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func updateCellSize(level: LevelModel) {
         // Вычисляем размер ячейки на основе размера экрана и размера сетки
         // с учетом безопасных областей и небольшого отступа
-        let padding: CGFloat = 20.0
+        let padding: CGFloat = 0.0
         
         let availableWidth = screenSize.width - safeAreaInsets.left - safeAreaInsets.right - (padding * 2)
         let availableHeight = screenSize.height - safeAreaInsets.top - safeAreaInsets.bottom - (padding * 2)
@@ -223,7 +223,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             path.addLine(to: CGPoint(x: xPos, y: CGFloat(height) * cellSize))
             
             let line = SKShapeNode(path: path)
-            line.strokeColor = .gray
+            line.strokeColor = .clear
             line.lineWidth = 0.5
             line.alpha = 0.3
             gridNode.addChild(line)
@@ -236,7 +236,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             path.addLine(to: CGPoint(x: CGFloat(width) * cellSize, y: yPos))
             
             let line = SKShapeNode(path: path)
-            line.strokeColor = .gray
+            line.strokeColor = .clear
             line.lineWidth = 0.5
             line.alpha = 0.3
             gridNode.addChild(line)
@@ -252,7 +252,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Создаем визуальное представление препятствия
             let position = obstacle.gridPosition.toPoint(cellSize: cellSize)
-            let obstacleNode = SKSpriteNode(color: .brown, size: CGSize(width: cellSize, height: cellSize))
+            let obstacleNode = SKSpriteNode(color: .gray, size: CGSize(width: cellSize, height: cellSize))
             obstacleNode.position = position
             
             // Настройка физического тела
@@ -271,12 +271,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Сохраняем позицию перекрестка
             intersectionPositions.insert(intersection.gridPosition)
             
-            // Создаем визуальное представление перекрестка (опционально)
+            // Создаем визуальное представление перекрестка (опционально для отладки)
             let position = intersection.gridPosition.toPoint(cellSize: cellSize)
             let intersectionNode = SKShapeNode(circleOfRadius: cellSize / 4)
             intersectionNode.position = position
             intersectionNode.fillColor = .yellow
-            intersectionNode.alpha = 0.5 // Полупрозрачное для отладки
+            intersectionNode.alpha = 0.0
             
             parent.addChild(intersectionNode)
         }
