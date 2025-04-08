@@ -184,36 +184,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupLevel() {
         guard let level = levelViewModel?.level else { return }
         
-        // Очищаем предыдущие ноды, если они есть
+        // Очищаем предыдущие ноды (это удаляет и фон)
         removeAllChildren()
+        
+        // Устанавливаем фон после очистки сцены
+        setupWaterBackground()
+        
+        // Очищаем коллекции
         shipNodes.removeAll()
         intersectionPositions.removeAll()
         obstaclePositions.removeAll()
         
-        // Обновляем размер ячейки на основе размера экрана
         updateCellSize(level: level)
         
-        // Создаем контейнер для всех элементов игры
+        // Создаем контейнер для игровых элементов
         let gameContainer = SKNode()
         addChild(gameContainer)
         gameContainerNode = gameContainer
         
-        // Отрисовка фона (сетка)
+        // Отрисовка игрового поля: сетка, препятствия, перекрестки, корабли
         setupGrid(width: level.gridSettings.width, height: level.gridSettings.height, parent: gameContainer)
-        
-        // Размещение препятствий
         setupObstacles(level.obstacles, parent: gameContainer)
-        
-        // Размещение перекрестков
         setupIntersections(level.intersections, parent: gameContainer)
-        
-        // Размещение кораблей
         setupShips(level.ships, parent: gameContainer)
         
-        // Центрируем игровое поле в сцене
         recenterGameBoard()
-        
-        // Обновляем границы для определения выхода кораблей
         setupScreenBoundaries()
     }
     
@@ -373,17 +368,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             shipNode.applyCorrectRotation(animated: true)
         }
     }
-    
-    //    private func performTurnAnimation(_ shipNode: ShipNode, from oldDirection: ShipDirection, to newDirection: ShipDirection) {
-    //        // Определяем угол поворота
-    //        let newAngle = newDirection.angle
-    //
-    //        // Создаем действие поворота
-    //        let rotateAction = SKAction.rotate(toAngle: newAngle, duration: 0.2, shortestUnitArc: true)
-    //
-    //        // Выполняем анимацию
-    //        shipNode.run(rotateAction)
-    //    }
     
     private func shipExitedScreen(_ shipNode: ShipNode) {
         // Удаляем корабль со сцены

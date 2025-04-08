@@ -33,31 +33,32 @@ class ShipNode: SKNode {
         self.id = id
         self.direction = direction
         self.turnPattern = turnPattern
-        
-        // Создаем спрайт корабля с текстурой "ship"
-        let shipTexture = SKTexture(imageNamed: "ship2")
+
+        // Загружаем текстуру корабля
+        let shipTexture = SKTexture(imageNamed: "ship")
         shipSprite = SKSpriteNode(texture: shipTexture)
-        shipSprite.size = size
         
-        // Создаем индикатор паттерна поворота
+        // Задаем новые размеры: shipWidth и shipHeight
+        let shipWidth = size.width * 0.8
+        let shipHeight = size.height * 2
+        shipSprite.size = CGSize(width: shipWidth, height: shipHeight)
+        
+        // Создаем индикатор паттерна поворота (оставляем без изменений)
         patternIndicator = SKLabelNode(fontNamed: "Helvetica-Bold")
         patternIndicator.text = turnPattern.indicatorText
-        patternIndicator.fontSize = size.width * 0.4
+        patternIndicator.fontSize = shipWidth * 0.4
         patternIndicator.fontColor = .black
         patternIndicator.position = CGPoint(x: 0, y: 0)
         patternIndicator.verticalAlignmentMode = .center
         patternIndicator.horizontalAlignmentMode = .center
-        
+
         super.init()
-        
+
         // Добавляем спрайт и индикатор
         addChild(shipSprite)
         addChild(patternIndicator)
-        
-        // Запускаем анимацию пульсации для неактивного состояния
+
         startPulseAnimation()
-        
-        // Устанавливаем начальную ориентацию
         updateOrientation(animated: false)
     }
     
