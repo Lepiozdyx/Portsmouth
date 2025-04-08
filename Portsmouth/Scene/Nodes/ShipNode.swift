@@ -34,8 +34,9 @@ class ShipNode: SKNode {
         self.direction = direction
         self.turnPattern = turnPattern
 
-        // Загружаем текстуру корабля
-        let shipTexture = SKTexture(imageNamed: "ship")
+        // Загружаем текстуру корабля в зависимости от выбранного в магазине
+        let selectedShip = ShopService.shared.selectedShip
+        let shipTexture = SKTexture(imageNamed: selectedShip.actualAssetName)
         shipSprite = SKSpriteNode(texture: shipTexture)
         
         // Задаем новые размеры: shipWidth и shipHeight

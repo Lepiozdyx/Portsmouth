@@ -63,13 +63,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     // MARK: - Настройка фона с текстурой воды
-    
     private func setupWaterBackground() {
         // Удаляем старый фоновый узел, если он существует
         waterBackgroundNode?.removeFromParent()
         
-        // Загружаем текстуру воды
-        let waterTexture = SKTexture(imageNamed: "bgclassic")
+        // Загружаем текстуру воды в зависимости от выбранного фона
+        let selectedBackground = ShopService.shared.selectedBackground
+        let waterTexture = SKTexture(imageNamed: selectedBackground.actualAssetName)
         
         // Создаем большой спрайт, который будет покрывать весь экран
         let backgroundSprite = SKSpriteNode(texture: waterTexture)

@@ -52,7 +52,7 @@ struct MainMenuView: View {
                     
                     HStack(alignment: .top) {
                         NavigationLink {
-                            // показать экран магазина
+                            ShopView(gameViewModel: gameViewModel)
                         } label: {
                             Image(.shopButton)
                                 .resizable()

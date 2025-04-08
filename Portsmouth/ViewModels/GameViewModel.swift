@@ -130,7 +130,7 @@ class GameViewModel: ObservableObject {
     // MARK: - Вспомогательные методы
     
     /// Загрузить прогресс пользователя
-    private func loadUserProgress() {
+    func loadUserProgress() {
         coins = progressService.getCoins()
         unlockedLevelIds = progressService.userProgress.unlockedLevelIds
     }
