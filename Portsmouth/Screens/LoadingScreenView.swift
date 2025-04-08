@@ -9,6 +9,14 @@ struct LoadingScreenView: View {
             BackgoundView(img: .bgload)
             
             VStack {
+                Spacer()
+                Image(.logo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 250)
+                
+                Spacer()
+                
                 Text("LOADING..")
                     .font(.system(size: 20, weight: .heavy, design: .monospaced))
                     .foregroundStyle(.yellow)

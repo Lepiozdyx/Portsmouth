@@ -105,4 +105,152 @@ class ObstacleUtils {
         node.xScale = 1.0
         node.yScale = 1.0
     }
+    
+    /// Добавляет декоративные элементы (контейнеры) на блок порта
+    static func addDecorativeElements(to node: SKSpriteNode, blockWidth: Int, blockHeight: Int, cellSize: CGFloat) {
+        // Определяем, нужно ли добавлять декорации на этот блок
+        // (не на все блоки добавляем - некоторые могут быть причалами без контейнеров)
+        let shouldAddDecorations = Bool.random()
+        guard shouldAddDecorations && blockWidth >= 2 && blockHeight >= 2 else { return }
+        
+        // Размер блока порта в пикселях
+        let portWidth = CGFloat(blockWidth) * cellSize
+        let portHeight = CGFloat(blockHeight) * cellSize
+        
+        // Определяем тип размещения контейнеров в зависимости от формы блока
+        if blockWidth > blockHeight * 2 {
+            // Длинная горизонтальная пристань - ряд контейнеров
+            addContainersInRow(to: node, width: portWidth, height: portHeight, cellSize: cellSize)
+        } else if blockHeight > blockWidth * 2 {
+            // Высокая вертикальная пристань - колонна контейнеров
+            addContainersInColumn(to: node, width: portWidth, height: portHeight, cellSize: cellSize)
+        } else {
+            // Квадратный или почти квадратный порт - контейнеры группами
+            addContainersInGroups(to: node, width: portWidth, height: portHeight, cellSize: cellSize)
+        }
+    }
+    
+    /// Размещает контейнеры в ряд (для горизонтальных пристаней)
+    private static func addContainersInRow(to node: SKSpriteNode, width: CGFloat, height: CGFloat, cellSize: CGFloat) {
+        // Доступные текстуры контейнеров
+        let containerTextures = ["box", "box1", "box2", "box3"]
+        
+        // Размер контейнера (немного меньше, чем клетка)
+        let containerWidth = cellSize * 0.8
+        let containerHeight = cellSize * 0.8
+        
+        // Сколько контейнеров разместить
+        let maxContainers = Int(width / containerWidth) - 1
+        let containerCount = min(maxContainers, Int.random(in: 2...6))
+        
+        // Расстояние между контейнерами
+        let spacing = (width - CGFloat(containerCount) * containerWidth) / CGFloat(containerCount + 1)
+        
+        // Размещаем контейнеры в ряд
+        for i in 0..<containerCount {
+            // Выбираем случайную текстуру
+            let textureName = containerTextures.randomElement() ?? "box"
+            let containerNode = SKSpriteNode(imageNamed: textureName)
+            
+            // Устанавливаем размер
+            containerNode.size = CGSize(width: containerWidth, height: containerHeight)
+            
+            // Вычисляем позицию
+            let xPos = -width/2 + spacing + containerWidth/2 + CGFloat(i) * (containerWidth + spacing)
+            let yPos = CGFloat.random(in: -height/4...height/4) // Небольшое смещение по вертикали
+            
+            containerNode.position = CGPoint(x: xPos, y: yPos)
+            
+            // Небольшой случайный поворот для реалистичности
+            containerNode.zRotation = CGFloat.random(in: -0.1...0.1)
+            
+            // Добавляем контейнер как дочерний узел
+            node.addChild(containerNode)
+        }
+    }
+    
+    /// Размещает контейнеры в колонну (для вертикальных пристаней)
+    private static func addContainersInColumn(to node: SKSpriteNode, width: CGFloat, height: CGFloat, cellSize: CGFloat) {
+        // Доступные текстуры контейнеров
+        let containerTextures = ["box", "box1", "box2", "box3"]
+        
+        // Размер контейнера
+        let containerWidth = cellSize * 0.8
+        let containerHeight = cellSize * 0.8
+        
+        // Сколько контейнеров разместить
+        let maxContainers = Int(height / containerHeight) - 1
+        let containerCount = min(maxContainers, Int.random(in: 2...6))
+        
+        // Расстояние между контейнерами
+        let spacing = (height - CGFloat(containerCount) * containerHeight) / CGFloat(containerCount + 1)
+        
+        // Размещаем контейнеры в колонну
+        for i in 0..<containerCount {
+            // Выбираем случайную текстуру
+            let textureName = containerTextures.randomElement() ?? "box"
+            let containerNode = SKSpriteNode(imageNamed: textureName)
+            
+            // Устанавливаем размер
+            containerNode.size = CGSize(width: containerWidth, height: containerHeight)
+            
+            // Вычисляем позицию
+            let xPos = CGFloat.random(in: -width/4...width/4) // Небольшое смещение по горизонтали
+            let yPos = -height/2 + spacing + containerHeight/2 + CGFloat(i) * (containerHeight + spacing)
+            
+            containerNode.position = CGPoint(x: xPos, y: yPos)
+            
+            // Небольшой случайный поворот для реалистичности
+            containerNode.zRotation = CGFloat.random(in: -0.1...0.1)
+            
+            // Добавляем контейнер как дочерний узел
+            node.addChild(containerNode)
+        }
+    }
+    
+    /// Размещает контейнеры группами (для квадратных портов)
+    private static func addContainersInGroups(to node: SKSpriteNode, width: CGFloat, height: CGFloat, cellSize: CGFloat) {
+        // Доступные текстуры контейнеров
+        let containerTextures = ["box", "box1", "box2", "box3"]
+        
+        // Размер контейнера
+        let containerWidth = cellSize * 0.8
+        let containerHeight = cellSize * 0.8
+        
+        // Определяем, сколько групп контейнеров разместить
+        let groupCount = Int.random(in: 1...3)
+        
+        // Для каждой группы
+        for _ in 0..<groupCount {
+            // Количество контейнеров в этой группе
+            let containersInGroup = Int.random(in: 2...4)
+            
+            // Выбираем случайное место для группы
+            let groupX = CGFloat.random(in: -width/2 + containerWidth...width/2 - containerWidth)
+            let groupY = CGFloat.random(in: -height/2 + containerHeight...height/2 - containerHeight)
+            
+            // Создаем контейнеры в этой группе
+            for i in 0..<containersInGroup {
+                // Выбираем случайную текстуру
+                let textureName = containerTextures.randomElement() ?? "box"
+                let containerNode = SKSpriteNode(imageNamed: textureName)
+                
+                // Устанавливаем размер
+                containerNode.size = CGSize(width: containerWidth, height: containerHeight)
+                
+                // Смещаем контейнер относительно центра группы
+                // Немного хаотично, но близко друг к другу
+                let offsetX = CGFloat.random(in: -containerWidth/2...containerWidth/2)
+                let offsetY = CGFloat(i) * containerHeight * 0.7 // Стопка
+                
+                containerNode.position = CGPoint(x: groupX + offsetX, y: groupY + offsetY)
+                
+                // Небольшой случайный поворот
+                containerNode.zRotation = CGFloat.random(in: -0.1...0.1)
+                
+                // Добавляем контейнер
+                node.addChild(containerNode)
+            }
+        }
+    }
 }

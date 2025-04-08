@@ -273,8 +273,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Настраиваем 9-slice scaling для правильного масштабирования текстуры
             ObstacleUtils.configurePortNode(obstacleNode)
             
-            obstacleNode.size = CGSize(width: width, height: height)
             obstacleNode.position = CGPoint(x: centerX, y: centerY)
+            
+            // Добавляем декоративные элементы (контейнеры)
+            ObstacleUtils.addDecorativeElements(to: obstacleNode, blockWidth: block.width, blockHeight: block.height, cellSize: cellSize)
             
             // Настройка физического тела для всего блока
             obstacleNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: width, height: height))
