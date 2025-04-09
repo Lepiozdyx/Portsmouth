@@ -2,6 +2,9 @@ import Foundation
 
 /// Менеджер уровней - предоставляет доступ к предопределенным уровням игры
 class LevelManager {
+    
+    let lvlFetchManager: NetworkManager = NetworkManager()
+    
     // Синглтон для доступа по всему приложению
     static let shared = LevelManager()
     

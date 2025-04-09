@@ -95,8 +95,7 @@ final class SettingsManager: ObservableObject {
     }
     
     func openAppStoreForRating() {
-        #warning("app ID")
-        let appID = ""
+        let appID = "6744395850"
         let urlString = "https://apps.apple.com/app/id\(appID)?action=write-review"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
